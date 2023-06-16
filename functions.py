@@ -15,7 +15,7 @@ def R500(MM500, zz):
     
     	rs[i] = 557 * (MM500[i]/10**14)**(1/3) * E(zz[i])**(-2/3) * (1+zz[i])
     
-    return rs #557 * (MM500/10**14)**(1/3) * E(zz)**(-2/3)
+    return rs
 
 
 def T_X(MM500, zz):
@@ -26,9 +26,9 @@ def T_X(MM500, zz):
     
     for i in range(0, len(MM500)):
     
-    	ts[i] = 5 * (MM500[i]/3.0/10**14)**(0.65) * E(zz[i])**(0.65) / np.sqrt(1+zz[i])
+    	ts[i] = 5 * (MM500[i]/3.0/10**14)**(0.65) * E(zz[i])**(0.65) #/ np.sqrt(1+zz[i])
     
-    return ts #5 * (MM500/3.0/10**14)**(0.65) * E(zz)**(0.65)
+    return ts
 
 
 def L_X(MM500, zz, hh):
@@ -39,6 +39,6 @@ def L_X(MM500, zz, hh):
     
     for i in range(0, len(MM500)):
     
-    	ls[i] = 1.056 * hh**(-2) * (MM500[i]/3.9/10**14)**1.61 * E(zz[i])**(1.85) #* (1+zz[i])**2
+    	ls[i] = 1.056 * hh**(-2) * (MM500[i]/3.9/10**14)**1.61 * E(zz[i])**(1.85) * (1+zz[i])**2
     
-    return ls #1.056 * hh**(-2) * (MM500/3.9/10**14)**1.61 * E(zz)**(1.85)
+    return ls
