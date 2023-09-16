@@ -2,9 +2,9 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(ihal, r, draw=True):
+def extract_photons_from_cluster(current_cluster_num, r, draw=True):
 
-    current_cluster_num = ihal
+    # there are several cases of SAME ihal for DIFFERENT cluster numbers
     
     current_cluster = clusters.loc[current_cluster_num]
     
@@ -55,7 +55,7 @@ def extract_photons_from_cluster(ihal, r, draw=True):
     
 # "erosita_binning" is external list
     
-def create_spectrum(list_of_photons, REDSHIFT, create_textfile=True, create_pha=True):
+def create_spectrum_old(list_of_photons, create_textfile=True, create_pha=True):
 
     N_channels = 1024
 
@@ -114,45 +114,184 @@ def create_spectrum(list_of_photons, REDSHIFT, create_textfile=True, create_pha=
         
     return None
     
+
+def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, borders, Xplot=False, plot=True, also_plot_model=False):
+
+    x.Xset.chatter = 0
     
-def fit_spectra(filename):
- 
-    #fits.open(filename).info()
-    x.AllData.clear()
-
-    RMF = '../erosita/erosita_pirmf_v20210719.rmf'
-
-    ARF = '../erosita/tm1_arf_filter_000101v02.fits'
-
-    SPECTRUM = x.Spectrum(filename, respFile=RMF, arfFile=ARF)
+    erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
+    #print(erosita_binning)
     
-    x.Plot.device = "/xs"
+    N_channels = 1024
+
+    # there is no big difference which binning to choose
+
+    #dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
+    #dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
+    dummyrsp = np.append(erosita_binning, [12.0])
+
+    photons, energies = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
+
+    model_input = [a/10000/1000 for a in photons]
+
+    # 10000 (s) is exposition time and 1000 (cm2) is nominal area
+    
+    if Xplot:
+        x.Plot.device = "/xs"
+    else:
+        x.Plot.device = '/null'
+        
     x.Plot.xAxis = "keV"
-    x.AllData.ignore("**-0.4 7.0-**")
-
+        
     x.AllModels.clear()
 
-    x.Plot("ldata")
+    def myModel(engs, params, flux):
+        for i in range(len(engs)-1):
+            if engs[i]>0.1 and engs[i]<12.0:
+                val = np.interp(engs[i], dummyrsp[1:], model_input)
+                #print(i, engs[i], val)
+                flux[i] = val
+            else:
+                flux[i] = 0
 
-    xVals = x.Plot.x()
-    yVals = x.Plot.y()
+    myModelParInfo = (f"par1 Number {current_cluster_num} 1 1 1 1 0.001",)
 
-    plt.figure(figsize=(5, 5))
+    x.AllModels.addPyMod(myModel, myModelParInfo, 'add')
+    
+    x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=1024)
+    #x.AllData.removeDummyrsp()
+    
+    mmmm = x.Model("myModel")
+    
+    if plot and also_plot_model:
+    
+        plt.subplot(121)
+    
+        x.Plot("model")
+        xVals = x.Plot.x()[1:]
+        modVals = x.Plot.model()[1:]
 
-    plt.plot(xVals, yVals)# np.multiply(np.multiply(xVals,xVals),yVals))
-    plt.xscale('log')
-    plt.yscale('log')
+        plt.plot(xVals, modVals, label="My model")
+        plt.xscale('log')
+        plt.yscale('log')
+        #plt.legend()
+        
+        plt.xlabel(x.Plot.labels()[0])
+        plt.ylabel(x.Plot.labels()[1])
+        plt.title(x.Plot.labels()[2])
+               
+        
+    x.AllData.clear()
 
-    plt.xlabel(x.Plot.labels()[0])
-    plt.ylabel(x.Plot.labels()[1])
-    #plt.title(x.Plot.labels()[2])
+    fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
+                               arf = '../erosita/tm1_arf_open_000101v02.fits', 
+                        background = '', 
+                          exposure = 10000, 
+                        correction = '', 
+                      backExposure = '', 
+                          fileName = 'fakeit.pha')
+    x.AllData.fakeit(nSpectra = 1, 
+                     settings = fs, 
+                   applyStats = True,
+                   filePrefix = "",
+                      noWrite = True)
+                      
+    if plot:
+        
+        if also_plot_model:
+             plt.subplot(122)
+        
+        x.Plot("ldata")        
+        
+        xVals = x.Plot.x()
+        xErrors = x.Plot.xErr()
+        yVals = x.Plot.y()
+        yErrors = x.Plot.yErr()
+        modVals = x.Plot.model()
+        
+        every = 1
 
-    #plt.ylim(10**(-1), 10**2)
+        plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "All data")
+        
+        plt.xscale('log')
+        plt.yscale('log')
+        plt.legend(loc=1) 
 
-    plt.show()
+        plt.xlabel(x.Plot.labels()[0])
+        plt.ylabel(x.Plot.labels()[1])
+        #plt.title(x.Plot.labels()[2])
+       
+    x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")
+    #x.AllData.notice("all")
+                        
+    #x.AllModels.clear()
+
+    mod = x.Model('phabs*apec')
+    mod(1).values = 0.01      # n_H
+    mod(1).frozen = True
+    mod(3).frozen = False     # abundance
+    #mod(3).values = 0.3
+    mod(4).values = f"{REDSHIFT}"
+
+    mod.show()
+    
+    x.Fit.renorm('auto')
+    x.Fit.nIterations = 100
+    #x.Fit.query = 'yes'
+    #x.Fit.weight = 'standard'
+    x.Fit.statMethod = 'chi'
+    
+    x.Fit.perform()
+        
+    x.Xset.parallel.error = 4
+    x.Fit.error('2')
+    
+    T_spec = mod(2).values[0]
+    T_spec_left = mod(2).error[0]
+    T_spec_right = mod(2).error[1]
+    
+    if plot:
+    
+        if also_plot_model:
+             plt.subplot(122)           
+    
+        plt.axvline(borders[0], linestyle = '--', color='black')
+        plt.axvline(borders[1], linestyle = '--', color='black')
+    
+        x.Plot("ldata")
+
+        xVals = x.Plot.x()
+        xErrors = x.Plot.xErr()
+        yVals = x.Plot.y()
+        yErrors = x.Plot.yErr()
+        modVals = x.Plot.model()
+
+        plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, color='b', label = "Fit data")
+        plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
+        plt.legend(loc=1, framealpha=1)
+        
+        plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$"+f" ($\\chi^2_{{red.}}=$ {x.Fit.statistic/x.Fit.dof:.3f})", fontsize=15)
+               
+        if also_plot_model:
+            
+            plt.subplot(121)
+            
+            x.Plot("model")
+            xVals = x.Plot.x()
+            modVals = x.Plot.model()
+
+            plt.plot(xVals, modVals, label="Best-fit")
+            plt.legend()
+        
+            #plt.show()  
+        
+    x.Xset.chatter = 10
+   
+    return T_spec, T_spec_left, T_spec_right
+    
 
 
-
+    
 
 
 
