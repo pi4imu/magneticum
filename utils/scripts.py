@@ -239,7 +239,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     x.Fit.nIterations = 100
     #x.Fit.query = 'yes'
     #x.Fit.weight = 'standard'
-    x.Fit.statMethod = 'chi'
+    x.Fit.statMethod = 'cstat'
     
     x.Fit.perform()
         
@@ -249,6 +249,9 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     T_spec = mod(2).values[0]
     T_spec_left = mod(2).error[0]
     T_spec_right = mod(2).error[1]
+    
+    x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
+    luminosity = x.AllData(1).lumin
     
     if plot:
     
@@ -287,7 +290,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         
     x.Xset.chatter = 10
    
-    return T_spec, T_spec_left, T_spec_right
+    return T_spec, T_spec_left, T_spec_right, luminosity
     
 
 
