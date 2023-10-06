@@ -45,10 +45,12 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True):
     
     if draw:
     
-        plt.figure(figsize=(6,5))
+        #plt.figure(figsize=(6,5))
         plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=1)
         plt.colorbar()
-        plt.show()
+        plt.title('#'+str(current_cluster_num), fontsize=15)
+        plt.tight_layout()
+        #plt.show()
     
     return dddfff
     
@@ -231,7 +233,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     mod(1).frozen = True
     mod(3).frozen = False     # abundance
     #mod(3).values = 0.3
-    mod(4).values = f"{REDSHIFT}"
+    mod(4).values = f"{REDSHIFT}"  # of cluster, not of photon list
 
     mod.show()
     
