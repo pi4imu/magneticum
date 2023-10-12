@@ -225,6 +225,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
        
     x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")
     #x.AllData.notice("all")
+
                         
     #x.AllModels.clear()
 
@@ -254,6 +255,14 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
+    
+    # average energy:
+    
+    s_i = x.AllData(1).values
+    ens = x.AllData(1).energies
+    E_i = [(e[0]+e[1])/2 for e in ens]
+    
+    av_en = np.dot(E_i, s_i)/sum(s_i)
     
     if plot:
     
@@ -292,7 +301,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         
     x.Xset.chatter = 10
    
-    return T_spec, T_spec_left, T_spec_right, luminosity
+    return (T_spec, T_spec_left, T_spec_right), luminosity, av_en
     
 
 
