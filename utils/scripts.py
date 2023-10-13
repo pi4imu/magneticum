@@ -232,8 +232,8 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     mod = x.Model('phabs*apec')
     mod(1).values = 0.01      # n_H
     mod(1).frozen = True
-    mod(3).frozen = False     # abundance
-    #mod(3).values = 0.3
+    mod(3).frozen = True     # abundance
+    mod(3).values = 0.3
     mod(4).values = f"{REDSHIFT}"  # of cluster, not of photon list
 
     mod.show()
@@ -241,7 +241,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     x.Fit.renorm('auto')
     x.Fit.nIterations = 100
     #x.Fit.query = 'yes'
-    #x.Fit.weight = 'standard'
+    x.Fit.weight = 'standard'
     x.Fit.statMethod = 'cstat'
     
     x.Fit.perform()
@@ -262,7 +262,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     ens = x.AllData(1).energies
     E_i = [(e[0]+e[1])/2 for e in ens]
     
-    av_en = np.dot(E_i, s_i)/sum(s_i)
+    av_en = np.dot(E_i, s_i)/np.sum(s_i)
     
     if plot:
     
@@ -304,8 +304,54 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     return (T_spec, T_spec_left, T_spec_right), luminosity, av_en
     
 
+def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
 
+    temp_usr1 = {}
+    lumin_usr1 = {}
+    aven_usr1 = {}
     
+    for cl_num in CLUSTERS_LIST.index[:]:
+    
+        mean_temp = 0
+        mean_lum = 0
+        mean_aven = 0
+        
+        cl_red = CLUSTERS_LIST.loc[cl_num]["z_true"]
+        cl_T500 = CLUSTERS_LIST.loc[cl_num]["T500"]
+        cl_lum = CLUSTERS_LIST.loc[cl_num]["Lx500"]
+        
+        pho_list = extract_photons_from_cluster(cl_num, r = 'Rvir', draw=False)
+        
+        print(" |", cl_num,": ", end="")
+        
+        temps = np.zeros(N_usr)
+        lumins = np.zeros(N_usr)
+        avens = np.zeros(N_usr)
+    
+        for i in range(N_usr):
+	    
+            Ts = create_spectrum_and_fit_it(cl_num, pho_list, cl_red, borders=[0.4, 7.0], 
+	                                    Xplot=False, plot=False, also_plot_model=False)
+    
+            temps[i] = Ts[0][0]
+            lumins[i] = Ts[1][0]
+            avens[i] = Ts[2]
+	    
+            print(i+1, end="")
+	    
+        mean_temp = np.mean(temps)
+        mean_lum = np.mean(lumins)
+        mean_aven = np.mean(avens)
+        
+        err_temp = np.std(temps)
+        err_lum = np.std(lumins)
+        err_aven = np.std(avens)
+	    
+        temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
+        lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
+        aven_usr1[cl_num] = [mean_aven, err_aven]
+        
+    return temp_usr1, lumin_usr1, aven_usr1
 
 
 
