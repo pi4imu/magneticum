@@ -2,7 +2,7 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_num, r, draw=True):
+def extract_photons_from_cluster(current_cluster_num, r, draw=True, draw_new=True):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
     
@@ -30,6 +30,7 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True):
     t = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_"+snap_id_str+".fits", hdu=2)
     
     SLICE = t.to_pandas()
+    SLICE1 = t.to_pandas()
     
     if r == 'Rvir':
         R = R_vir
@@ -46,10 +47,20 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True):
     if draw:
     
         #plt.figure(figsize=(6,5))
-        plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=1)
+        if not draw_new:
+            plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=1)
+        else:
+            SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < R_vir) & (np.abs(SLICE1["DEC"]-DEC_c) < R_vir), True, False)
+            whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
+            whattodraw = whattodraw.drop("whattodraw1", axis=1)
+            plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=1) #norm=matplotlib.colors.LogNorm())
+        
+        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='orangered', linestyle="--", lw=3, fill = False, label="$R_{vir}$"))
+        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='g', linestyle="--", lw=3, fill = False, label="$R_{500}$"))
         plt.colorbar()
         plt.title('#'+str(current_cluster_num), fontsize=15)
         plt.tight_layout()
+        #plt.legend()
         #plt.show()
     
     return dddfff
