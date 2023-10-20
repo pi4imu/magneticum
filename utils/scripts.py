@@ -46,21 +46,29 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True, draw_new=Tru
     
     if draw:
     
+        ang_res = 5
+    
         #plt.figure(figsize=(6,5))
         if not draw_new:
-            plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=1)
+            plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=0.001)
         else:
             SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < R_vir) & (np.abs(SLICE1["DEC"]-DEC_c) < R_vir), True, False)
             whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
             whattodraw = whattodraw.drop("whattodraw1", axis=1)
-            plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=1) #norm=matplotlib.colors.LogNorm())
+            plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
+            plt.hist2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*R_500_rescaled*3600/ang_res), norm=matplotlib.colors.LogNorm())#, c=whattodraw["ENERGY"], cmap='viridis', s=0.001)
         
-        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='orangered', linestyle="--", lw=3, fill = False, label="$R_{vir}$"))
-        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='g', linestyle="--", lw=3, fill = False, label="$R_{500}$"))
-        plt.colorbar()
+        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='orangered', linestyle="--", lw=3, fill = False))
+        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='g', linestyle="--", lw=3, fill = False))
+        plt.colorbar(label=f"Number of photons in {ang_res}$\\times${ang_res} bin")
         plt.title('#'+str(current_cluster_num), fontsize=15)
         plt.tight_layout()
-        #plt.legend()
+        
+        handles, labels = plt.gca().get_legend_handles_labels()
+        l1 = Line2D([], [], label="$R_{vir}$", color='orangered', linestyle='--', linewidth=3)
+        l2 = Line2D([], [], label="$R_{500}$", color='g', linestyle='--', linewidth=3)
+        handles.extend([l1, l2])
+        plt.legend(handles=handles, loc=3)
         #plt.show()
     
     return dddfff
@@ -177,6 +185,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     mmmm = x.Model("myModel")
     
     if plot and also_plot_model:
+
     
         plt.subplot(121)
     
