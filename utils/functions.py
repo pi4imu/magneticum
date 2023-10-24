@@ -58,4 +58,4 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
     x.Xset.chatter = 10
     
-    return L_05_20/L_bol*lumin_bol * (1+redshift)**2
+    return L_05_20/L_bol*lumin_bol *E(redshift) * (1+redshift)**2

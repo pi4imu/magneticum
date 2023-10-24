@@ -2,11 +2,12 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_num, r, draw=True, draw_new=True):
+def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=True):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
+    # this is the reason for using cluster number as a counter
     
-    current_cluster = clusters.loc[current_cluster_num]
+    current_cluster = clusters.loc[current_cluster_number]
     
     RA_c = current_cluster["x_pix"]*30-5
     DEC_c = current_cluster["y_pix"]*30-5
@@ -15,22 +16,14 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True, draw_new=Tru
     ztrue = current_cluster["z_true"]
     
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(ztrue)*1000 # kpc
-    R_500_rescaled = R_500/D_A.value*180/np.pi
+    R_500_rescaled = R_500/D_A.value*180/np.pi  # degrees
     
-    #print(R_vir, R_500_rescaled)
-    
-    snap_id_str = binned_clusters[current_cluster_num][1]
- #   hdul = fits.open("../data/eROSITA_30.0x30.0/Phox/phlist_"+snap_id_str+".fits")
- #   SLICE = pd.DataFrame(hdul[2].data[:])
- #   display(SLICE)
- #   hdul.close()
-    
-#def extract_photons(ra_cl, dec_cl, R_cl, snapID):
-    
+    snap_id_str = binned_clusters[current_cluster_number][1]   # id of photon list
+        
     t = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_"+snap_id_str+".fits", hdu=2)
     
-    SLICE = t.to_pandas()
-    SLICE1 = t.to_pandas()
+    SLICE = t.to_pandas()        # for photons extraction
+    SLICE1 = t.to_pandas()       # for drawing
     
     if r == 'Rvir':
         R = R_vir
@@ -52,21 +45,27 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True, draw_new=Tru
         if not draw_new:
             plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=0.001)
         else:
-            SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < R_vir) & (np.abs(SLICE1["DEC"]-DEC_c) < R_vir), True, False)
+            SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < 1.1*R_vir) & (np.abs(SLICE1["DEC"]-DEC_c) < 1.1*R_vir), True, False)
             whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
             whattodraw = whattodraw.drop("whattodraw1", axis=1)
-            plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
-            plt.hist2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*R_500_rescaled*3600/ang_res), norm=matplotlib.colors.LogNorm())#, c=whattodraw["ENERGY"], cmap='viridis', s=0.001)
+            #plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
+            plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
+                       bins=int(2*R_500_rescaled*3600/ang_res),
+                       norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
         
-        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='orangered', linestyle="--", lw=3, fill = False))
-        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='g', linestyle="--", lw=3, fill = False))
-        plt.colorbar(label=f"Number of photons in {ang_res}$\\times${ang_res} bin")
-        plt.title('#'+str(current_cluster_num), fontsize=15)
-        plt.tight_layout()
+        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
+        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))
+        plt.xlim(RA_c-1.1*R_vir, RA_c+1.1*R_vir)
+        plt.ylim(DEC_c-1.1*R_vir, DEC_c+1.1*R_vir)
+        plt.xlabel("RA")
+        plt.ylabel("DEC")
+        plt.colorbar(label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
+        plt.title('#'+str(current_cluster_number), fontsize=15)
+        #plt.tight_layout()
         
         handles, labels = plt.gca().get_legend_handles_labels()
-        l1 = Line2D([], [], label="$R_{vir}$", color='orangered', linestyle='--', linewidth=3)
-        l2 = Line2D([], [], label="$R_{500}$", color='g', linestyle='--', linewidth=3)
+        l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
+        l2 = Line2D([], [], label="$R_{500}$", color='orangered', linestyle='--', linewidth=3)
         handles.extend([l1, l2])
         plt.legend(handles=handles, loc=3)
         #plt.show()
@@ -74,83 +73,28 @@ def extract_photons_from_cluster(current_cluster_num, r, draw=True, draw_new=Tru
     return dddfff
     
     
-# "erosita_binning" is external list
-    
-def create_spectrum_old(list_of_photons, create_textfile=True, create_pha=True):
 
-    N_channels = 1024
-
-    #dummyrsp = np.linspace(0.1, 50.0, N_channels+1)
-    #dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
-    dummyrsp = np.append(erosita_binning, [12.0])
-
-    counts, energies =  np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
-    
-    datfile = pd.DataFrame({"COUNTS":counts})
-    
-    #display(datfile)
-    
-    if create_textfile:
-        datfile.to_csv(f'../data/eROSITA_30.0x30.0/photons/photons_'+str(current_cluster_num)+'.dat', index=True, header=False, sep=' ')
-
-    prihdr = fits.Header()
-
-    prihdr['COMMENT'] = "FITS (Flexible Image Transport System) format is defined in 'Astronomy  and Astrophysics', volume 376, page 359; bibcode: 2001A&A...376..359H"
-
-    prihdu = fits.PrimaryHDU(header=prihdr)
-    
-    col0 = fits.Column(name='CHANNEL',  format='I', array = np.linspace(1,1024,1024))  #  datfile["ENERGIES"])
-    col3 = fits.Column(name='COUNTS',   format='I', array = datfile["COUNTS"], unit='COUNTS')
-
-    cols_spec = fits.ColDefs([col0, col3])
-
-    tbhdu_spec = fits.BinTableHDU.from_columns(cols_spec)
-    
-    thdulist1 = fits.HDUList([prihdu, tbhdu_spec])
-    hdr1 = thdulist1[1].header
-    
-    hdr1["EXTNAME"]  = ("SPECTRUM", 'the name (i.e. type) of the extension')
-    hdr1["TELESCOP"] = ("eROSITA", 'the "telescope" (i.e. mission/satellite name)')
-    hdr1["INSTRUME"] = ("TM1", 'the instrument/detector')
-    hdr1["FILTER"]   = ("NONE", 'the instrument filter in use (if any) ')
-    hdr1["EXPOSURE"] = ("10000", 'the integration time (in seconds) for the PHA data (assumed to be corrected for deadtime, data drop-outs etc. )')
-    hdr1["BACKFILE"] = ("NONE", 'the name of the corresponding background file (if any)')
-    hdr1["BACKSCAL"] = ("1", 'the background scaling factor (unless included as a column)')
-    hdr1["CORRFILE"] = ("NONE", 'the name of the corresponding correction file (if any)')
-    hdr1["CORRSCAL"] = ("1", 'the correction scaling factor')
-    hdr1["RESPFILE"] = ("NONE", 'the name of the corresponding (default) redistribution matrix file (RMF; see George et al. 1992a)')
-    hdr1["ANCRFILE"] = ("NONE", 'the name of the corresponding (default) ancillary response file (ARF; see George et al. 1992a)')
-    hdr1["AREASCAL"] = ("1", 'the area scaling factor (unless included as a column)')
-    hdr1["HDUCLASS"] = ("OGIP", 'should contain the string "OGIP" to indicate that this is an OGIP style file')
-    hdr1["HDUCLAS1"] = ("SPECTRUM", 'should contain the string "SPECTRUM" to indicate this is a spectrum')
-    hdr1["HDUVERS"]  = ("1.1.0", 'the version number of the format (this document describes version 1.2.1)')
-    hdr1["POISSERR"] = (True, 'whether Poissonian errors are appropriate to the data (see below)')
-    hdr1["CHANTYPE"] = ("PI", 'whether the channels used in the file have been corrected in anyway (see below)')
-    hdr1["DETCHANS"] = ("1024", 'the total number of detector channels available')
-    
-    if create_pha:
-        thdulist1.writeto('../data/eROSITA_30.0x30.0/photons/spectrum'+str(current_cluster_num)+'.pha', overwrite=True)
-    
-    print("Spectrum succesfully created")
-        
-    return None
-    
-
-def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, borders, Xplot=False, plot=True, also_plot_model=False):
+def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius="R500", Xplot=False, plot=True, also_plot_model=False):
 
     x.Xset.chatter = 0
     
+    # binning for proper imaging of model (doesn't affect fitting)
     erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
-    #print(erosita_binning)
-    
+  
     N_channels = 1024
-
+    
     # there is no big difference which binning to choose
-
+  
     #dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
     #dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
     dummyrsp = np.append(erosita_binning, [12.0])
+    
+    list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, draw=False)
+    REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
+    D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
+    R_500_rescaled =clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
 
+    # spectra from photons
     photons, energies = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
 
     model_input = [a/10000/1000 for a in photons]
@@ -163,6 +107,8 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         x.Plot.device = '/null'
         
     x.Plot.xAxis = "keV"
+    
+    # adding spectra as input model
         
     x.AllModels.clear()
 
@@ -179,21 +125,49 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
 
     x.AllModels.addPyMod(myModel, myModelParInfo, 'add')
     
+    # dummy rsp for model in suitable form
     x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=1024)
-    #x.AllData.removeDummyrsp()
     
     mmmm = x.Model("myModel")
     
     if plot and also_plot_model:
+    
+        x.Plot("model")
+        xVals_no_bkg = x.Plot.x()[1:]
+        modVals_no_bkg = x.Plot.model()[1:]
+    
+    # defining the model with background included:
+    
+    if BACKGROUND:
+    
+        df4 = pd.read_csv("utils/sky_bkg_full_arcmin_05cxb.xcm", header=None)[0]
+        bkg_model_name = df4[0][6:]
+        params={}
+        for i in range(1,18):
+            params[i+3] = df4[i]
+        
+        x.AllModels.clear()
+        myModel_with_bkg = x.Model("myModel+const*"+bkg_model_name, setPars=params, sourceNum=1)
+        myModel_with_bkg(2).values = 1           # norm for myModel
+        myModel_with_bkg(2).frozen = True
+        myModel_with_bkg(3).values = np.pi*R_500_rescaled**2*3600 # area of cluster = factor before background
 
+    
+    # plot initial model on the left panel
+
+    if plot and also_plot_model:
     
         plt.subplot(121)
     
         x.Plot("model")
-        xVals = x.Plot.x()[1:]
-        modVals = x.Plot.model()[1:]
+        xVals_with_bkg = x.Plot.x()[1:]
+        modVals_with_bkg = x.Plot.model()[1:]
 
-        plt.plot(xVals, modVals, label="My model")
+        plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model", linestyle = '--', linewidth=2)
+        
+        if BACKGROUND:
+                plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background", alpha=0.5)
+
         plt.xscale('log')
         plt.yscale('log')
         #plt.legend()
@@ -202,6 +176,7 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         plt.ylabel(x.Plot.labels()[1])
         plt.title(x.Plot.labels()[2])
                
+    # fakeit for input model (how erosita sees photons)    
         
     x.AllData.clear()
 
@@ -217,6 +192,8 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
                    applyStats = True,
                    filePrefix = "",
                       noWrite = True)
+    
+    # plotting fakeit data on the right panel (or without left panel, if plotting all data):
                       
     if plot:
         
@@ -229,9 +206,8 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         xErrors = x.Plot.xErr()
         yVals = x.Plot.y()
         yErrors = x.Plot.yErr()
-        modVals = x.Plot.model()
         
-        every = 1
+        every = 1 # how much points to draw (doesn't affect fit)
 
         plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "All data")
         
@@ -242,13 +218,14 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         plt.xlabel(x.Plot.labels()[0])
         plt.ylabel(x.Plot.labels()[1])
         #plt.title(x.Plot.labels()[2])
-       
+        
+    # energy band for fitting:
+          
     x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")
     #x.AllData.notice("all")
-
-                        
+                     
+    # defining the model for fitting                    
     #x.AllModels.clear()
-
     mod = x.Model('phabs*apec')
     mod(1).values = 0.01      # n_H
     mod(1).frozen = True
@@ -263,8 +240,9 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     #x.Fit.query = 'yes'
     x.Fit.weight = 'standard'
     x.Fit.statMethod = 'cstat'
-    
     x.Fit.perform()
+    
+    # extracting parameters:
         
     x.Xset.parallel.error = 4
     x.Fit.error('2')
@@ -283,6 +261,8 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
     E_i = [(e[0]+e[1])/2 for e in ens]
     
     av_en = np.dot(E_i, s_i)/np.sum(s_i)
+    
+    # plotting best-fit model at data panel:
     
     if plot:
     
@@ -303,8 +283,11 @@ def create_spectrum_and_fit_it(current_cluster_num, list_of_photons, REDSHIFT, b
         plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, color='b', label = "Fit data")
         plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
         plt.legend(loc=1, framealpha=1)
+                
+        stats_for_header = ""#f" ($\\chi^2_{{red.}}=$ {x.Fit.statistic/x.Fit.dof:.3f})"
+        plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$"+stats_for_header, fontsize=15)
         
-        plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$"+f" ($\\chi^2_{{red.}}=$ {x.Fit.statistic/x.Fit.dof:.3f})", fontsize=15)
+        # plotting best-fit model on left panel:
                
         if also_plot_model:
             
@@ -339,9 +322,7 @@ def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
         cl_red = CLUSTERS_LIST.loc[cl_num]["z_true"]
         cl_T500 = CLUSTERS_LIST.loc[cl_num]["T500"]
         cl_lum = CLUSTERS_LIST.loc[cl_num]["Lx500"]
-        
-        pho_list = extract_photons_from_cluster(cl_num, r = 'Rvir', draw=False)
-        
+                
         print(" |", cl_num,": ", end="")
         
         temps = np.zeros(N_usr)
@@ -350,7 +331,7 @@ def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
     
         for i in range(N_usr):
 	    
-            Ts = create_spectrum_and_fit_it(cl_num, pho_list, cl_red, borders=[0.4, 7.0], 
+            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], 
 	                                    Xplot=False, plot=False, also_plot_model=False)
     
             temps[i] = Ts[0][0]
@@ -374,6 +355,55 @@ def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
     return temp_usr1, lumin_usr1, aven_usr1
 
 
+def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr):
+    
+    plt.figure(figsize=(11.5,5.5))
+
+    plt.subplots_adjust()
+
+    plt.subplot(121)
+
+    xx  = [a[1] for a in x_array.values()]
+    xxe = [a[2] for a in x_array.values()]
+    yy  = [a[1] for a in y_array.values()]
+    yye = [a[2] for a in y_array.values()]
+
+    plt.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
+                 capsize=3, color=clr, marker='o', markersize=3)
+
+    plt.plot([1, 9], [1, 9], color='black', linewidth=1)
+
+    plt.xlabel(x_label, fontsize=11)
+    plt.ylabel(y_label_left, fontsize=11)
+
+    plt.xlim(1.2, 8.7)
+    plt.ylim(1.2, 8.7)
+
+
+    plt.subplot(222)
+
+    plt.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
+                 yerr=[a+b for a, b in zip(xxe, yye)], linewidth=0, elinewidth=1, 
+                 capsize=3, color=clr, marker='o', markersize=3)
+
+    plt.axhline(0, color='black', linewidth=1)
+    plt.ylabel(y_label_right_up, fontsize=11)
+
+    plt.subplot(224)
+    
+    y_p = [(YY-XX)/XX for YY, XX in zip(yy, xx)]
+    y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
+    
+    plt.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
+                 
+    list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
+    plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.5)
+
+    plt.axhline(0, color='black', linewidth=1)
+    plt.ylabel(y_label_right_down, fontsize=11)
+    plt.xlabel(x_label+'1', fontsize=11)
+
+    plt.show()
 
 
 
