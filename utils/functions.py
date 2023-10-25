@@ -26,7 +26,7 @@ def T_X(MM500, zz):
     
     for i in range(0, len(MM500)):
     
-    	ts[i] = 5 * (MM500[i]/3.0/10**14)**(0.65) * E(zz[i])**(0.65) / np.sqrt(1+zz[i])
+    	ts[i] = 5 * (MM500[i]/3.0/10**14)**(0.65) * E(zz[i])**(0.65) /1.25 # / np.sqrt(1+zz[i])
     
     return ts
 
@@ -48,7 +48,7 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
     x.Xset.chatter = 0
     
-    x.Model("phabs*apec", setPars={1:0.01, 2:temp, 3:abund, 4:redshift, 5:1})#, setPars={1:temp, 2:abund, 3:redshift, 4:1})
+    x.Model("apec", setPars={1:temp, 2:abund, 3:redshift, 4:1})#, setPars={1:temp, 2:abund, 3:redshift, 4:1})
     
     x.AllModels.calcLumin(f"0.1 10.0 {redshift}")
     L_bol = x.AllModels(1).lumin[0]
@@ -58,4 +58,4 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
     x.Xset.chatter = 10
     
-    return L_05_20/L_bol*lumin_bol *E(redshift) * (1+redshift)**2
+    return L_05_20/L_bol*lumin_bol / E(redshift) * (1+redshift)**2

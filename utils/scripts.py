@@ -92,7 +92,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, draw=False)
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
-    R_500_rescaled =clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
+    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
 
     # spectra from photons
     photons, energies = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
@@ -159,14 +159,15 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
         plt.subplot(121)
     
-        x.Plot("model")
-        xVals_with_bkg = x.Plot.x()[1:]
-        modVals_with_bkg = x.Plot.model()[1:]
-
-        plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model", linestyle = '--', linewidth=2)
+        plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '--', linewidth=2)
         
         if BACKGROUND:
-                plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background", alpha=0.5)
+        
+            x.Plot("model")
+            xVals_with_bkg = x.Plot.x()[1:]
+            modVals_with_bkg = x.Plot.model()[1:]
+                
+            plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background", alpha=0.5)
 
         plt.xscale('log')
         plt.yscale('log')
@@ -225,19 +226,43 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     #x.AllData.notice("all")
                      
     # defining the model for fitting                    
-    #x.AllModels.clear()
-    mod = x.Model('phabs*apec')
-    mod(1).values = 0.01      # n_H
-    mod(1).frozen = True
-    mod(3).frozen = True     # abundance
-    mod(3).values = 0.3
-    mod(4).values = f"{REDSHIFT}"  # of cluster, not of photon list
+    
+    x.AllModels.clear()
+    
+    if not BACKGROUND:
+    
+        mod = x.Model('phabs*apec')
+        mod(1).values = 0.01      # n_H
+        mod(1).frozen = True
+        mod(3).frozen = False     # abundance
+        #mod(3).values = 0.3
+        mod(4).values = f"{REDSHIFT}"  # of cluster, not of photon list
 
-    mod.show()
+        #mod.show()
+        
+    else:
+    
+        mod = x.Model('phabs*apec+const*'+bkg_model_name)
+
+        mod(1).values = 0.01
+        mod(1).frozen = True
+        mod(3).frozen = True
+        mod(3).values = 0.3
+        mod(4).values = f"{REDSHIFT}"
+
+        #mod(6).values = np.pi*R_500_rescaled**2/min2_to_deg2 # area of cluster = factor before background
+
+        for i in range(7, 24):
+            mod(i).frozen = True
+
+        for i in range(len(params)):
+            mod(i+7).values = list(params.values())[i]
+
+        #mod.show()
     
     x.Fit.renorm('auto')
     x.Fit.nIterations = 100
-    #x.Fit.query = 'yes'
+    x.Fit.query = 'yes'
     x.Fit.weight = 'standard'
     x.Fit.statMethod = 'cstat'
     x.Fit.perform()
@@ -297,8 +322,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             xVals = x.Plot.x()
             modVals = x.Plot.model()
 
-            plt.plot(xVals, modVals, label="Best-fit")
-            plt.legend()
+            plt.plot(xVals, modVals, label="Best-fit model", color='red')
+            plt.legend(loc=3)
         
             #plt.show()  
         
@@ -307,21 +332,21 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     return (T_spec, T_spec_left, T_spec_right), luminosity, av_en
     
 
-def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
+def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
 
     temp_usr1 = {}
     lumin_usr1 = {}
     aven_usr1 = {}
     
-    for cl_num in CLUSTERS_LIST.index[:]:
+    for cl_num in clusters.index[:]:
     
         mean_temp = 0
         mean_lum = 0
         mean_aven = 0
         
-        cl_red = CLUSTERS_LIST.loc[cl_num]["z_true"]
-        cl_T500 = CLUSTERS_LIST.loc[cl_num]["T500"]
-        cl_lum = CLUSTERS_LIST.loc[cl_num]["Lx500"]
+        cl_red = clusters.loc[cl_num]["z_true"]
+        cl_T500 = clusters.loc[cl_num]["T500"]
+        cl_lum = clusters.loc[cl_num]["Lx500"]
                 
         print(" |", cl_num,": ", end="")
         
@@ -331,7 +356,7 @@ def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
     
         for i in range(N_usr):
 	    
-            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], 
+            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius="R500",
 	                                    Xplot=False, plot=False, also_plot_model=False)
     
             temps[i] = Ts[0][0]
@@ -351,6 +376,19 @@ def calculate_all_and_average_it(N_usr, CLUSTERS_LIST):
         temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
         lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
         aven_usr1[cl_num] = [mean_aven, err_aven]
+        
+    if write_to_file:
+
+        df1 = pd.DataFrame(temp_usr.values())
+        df2 = pd.DataFrame(lumin_usr.values())
+        df3 = pd.DataFrame(aven_usr.values())
+        df_all = pd.concat([df1, df2, df3], axis=1)
+
+        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
+	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
+	                  '$E_{av}$', '$\Delta E_{av}$']
+        df_all.index = aven_usr.keys()
+        df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
         
     return temp_usr1, lumin_usr1, aven_usr1
 
@@ -388,6 +426,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
 
     plt.axhline(0, color='black', linewidth=1)
     plt.ylabel(y_label_right_up, fontsize=11)
+    
+    leftb, rightb = plt.gca().get_xlim()
 
     plt.subplot(224)
     
@@ -395,13 +435,16 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
     
     plt.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
+    plt.scatter(xx, y_p, color=clr, marker='o', s=3)
                  
     list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
-    plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.5)
+    plt.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
 
     plt.axhline(0, color='black', linewidth=1)
     plt.ylabel(y_label_right_down, fontsize=11)
-    plt.xlabel(x_label+'1', fontsize=11)
+    plt.xlabel(x_label, fontsize=11)
+    
+    plt.xlim(leftb, rightb)
 
     plt.show()
 
