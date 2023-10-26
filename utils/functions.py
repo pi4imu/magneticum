@@ -18,7 +18,7 @@ def R500(MM500, zz):
     return rs
 
 
-def T_X(MM500, zz):
+def T_X(MM500, zz, mean_T=5, mean_M=3):
 
     ts = np.zeros(len(zz))
     
@@ -26,7 +26,7 @@ def T_X(MM500, zz):
     
     for i in range(0, len(MM500)):
     
-    	ts[i] = 5 * (MM500[i]/3.0/10**14)**(0.65) * E(zz[i])**(0.65) /1.25 # / np.sqrt(1+zz[i])
+    	ts[i] = mean_T * (MM500[i]/mean_M/10**14)**(0.65) #* E(zz[i])**(0.65)  / np.sqrt(1+zz[i])
     
     return ts
 
@@ -39,7 +39,7 @@ def L_X(MM500, zz, hh):
     
     for i in range(0, len(MM500)):
     
-    	ls[i] = 1.056 * hh**(-2) * (MM500[i]/3.9/10**14)**1.61 * E(zz[i])**(1.85) * (1+zz[i])**2
+    	ls[i] = 1.056 * hh**(-2) * (MM500[i]/3.9/10**14)**1.61 * E(zz[i])**(.85) #* (1+zz[i])**2
     
     return ls
     
@@ -48,7 +48,7 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
     x.Xset.chatter = 0
     
-    x.Model("apec", setPars={1:temp, 2:abund, 3:redshift, 4:1})#, setPars={1:temp, 2:abund, 3:redshift, 4:1})
+    x.Model("apec", setPars={1:temp, 2:abund, 3:redshift, 4:1})
     
     x.AllModels.calcLumin(f"0.1 10.0 {redshift}")
     L_bol = x.AllModels(1).lumin[0]
@@ -58,4 +58,17 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
     x.Xset.chatter = 10
     
-    return L_05_20/L_bol*lumin_bol / E(redshift) * (1+redshift)**2
+    return L_05_20/L_bol*lumin_bol #/ E(redshift) #* (1+redshift)**2
+    
+def draw_panel(xx, yy1, yy2):
+
+    plt.scatter(xx, yy1, c=zs, cmap='viridis', s=10, label = 'simulations')
+    plt.plot(xx, yy2, color='red', linewidth=0, marker='o', markersize=4, 
+             alpha=0.4, linestyle='--', label = 'scaling relations')
+    plt.xscale("log")
+    plt.yscale("log")
+
+    plt.legend()
+    for i in range(0, len(zs)):
+        plt.plot([xx, xx], [yy1, yy2], color='grey', alpha=0.4, marker='o', markersize=0, linewidth=0.5)
+    #plt.colorbar(label='Redshift')
