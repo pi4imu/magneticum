@@ -132,7 +132,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     if plot and also_plot_model:
     
-        x.Plot("model")
+        x.Plot("eemodel")
         xVals_no_bkg = x.Plot.x()[1:]
         modVals_no_bkg = x.Plot.model()[1:]
     
@@ -163,7 +163,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         
         if BACKGROUND:
         
-            x.Plot("model")
+            x.Plot("eemodel")
             xVals_with_bkg = x.Plot.x()[1:]
             modVals_with_bkg = x.Plot.model()[1:]
                 
@@ -318,7 +318,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             
             plt.subplot(121)
             
-            x.Plot("model")
+            x.Plot("eemodel")
             xVals = x.Plot.x()
             modVals = x.Plot.model()
 
@@ -379,15 +379,14 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
         
     if write_to_file:
 
-        df1 = pd.DataFrame(temp_usr.values())
-        df2 = pd.DataFrame(lumin_usr.values())
-        df3 = pd.DataFrame(aven_usr.values())
+        df1 = pd.DataFrame(temp_usr1.values())
+        df2 = pd.DataFrame(lumin_usr1.values())
+        df3 = pd.DataFrame(aven_usr1.values())
         df_all = pd.concat([df1, df2, df3], axis=1)
-
         df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
 	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
 	                  '$E_{av}$', '$\Delta E_{av}$']
-        df_all.index = aven_usr.keys()
+        df_all.index = aven_usr1.keys()
         df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
         
     return temp_usr1, lumin_usr1, aven_usr1
@@ -401,10 +400,10 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
 
     plt.subplot(121)
 
-    xx  = [a[1] for a in x_array.values()]
-    xxe = [a[2] for a in x_array.values()]
-    yy  = [a[1] for a in y_array.values()]
-    yye = [a[2] for a in y_array.values()]
+    xx  = [a[1] for a in x_array]#.values()]
+    xxe = [a[2] for a in x_array]#.values()]
+    yy  = [a[1] for a in y_array]#.values()]
+    yye = [a[2] for a in y_array]#.values()]
 
     plt.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
                  capsize=3, color=clr, marker='o', markersize=3)
