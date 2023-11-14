@@ -3,13 +3,14 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     plt.figure(figsize=(11.5,5.5))
 
     plt.subplots_adjust()
+    #plt.tight_layout()
 
     plt.subplot(121)
 
-    xx  = [a[1] for a in x_array.values()]
-    xxe = [a[2] for a in x_array.values()]
-    yy  = [a[1] for a in y_array.values()]
-    yye = [a[2] for a in y_array.values()]
+    xx  = [a[1] for a in x_array]
+    xxe = [a[2] for a in x_array]
+    yy  = [a[1] for a in y_array]
+    yye = [a[2] for a in y_array]
 
     plt.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
                  capsize=3, color=clr, marker='o', markersize=3)
@@ -33,6 +34,12 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     plt.ylabel(y_label_right_up, fontsize=11)
     
     leftb, rightb = plt.gca().get_xlim()
+    leftc, rightc = plt.gca().get_ylim()
+    
+    #plt.subplot(2,5,5)
+    
+    #plt.hist([YY-XX for YY, XX in zip(yy, xx)], bins=30, histtype='stepfilled', orientation="horizontal", color=clr)
+    #plt.ylim((leftc, rightc))
 
     plt.subplot(224)
     
@@ -50,78 +57,54 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     plt.xlabel(x_label, fontsize=11)
     
     plt.xlim(leftb, rightb)
+    leftd, rightd = plt.gca().get_ylim()
+    
+    #plt.subplot(2,5,10)
+    #plt.hist(y_p, bins=30, histtype='stepfilled', orientation="horizontal", color=clr)
+    #plt.ylim((leftd, rightd))
 
     plt.show()
     
     
-def plot_T_vs_avE(avE, Tsp):
+def draw_84_panels(mode):
 
-	plt.figure(figsize=(7.1,7.1))
+    NNN = 84
+    
+    if mode=='IMAGE':
+        size=6
+    else:
+        size = 5
 
-	xx = [a[0] for a in avE.values()]
-	x_err = [a[1] for a in avE.values()]
-	yy1 = [a[0] for a in Tsp.values()]
-	yy2 = [a[1] for a in Tsp.values()]
-	y2_err = [a[2] for a in Tsp.values()]
+    plt.figure(figsize=((size)*7+6, size*12+11))
+    plt.tight_layout()
+    
+    if mode!='IMAGE':
+    
+        temp_compare = {}
+        lumin_compare = {}
+        average_ene = {}
+        
+    for cl_num in clusters.index[:NNN]:
+        
+        plt.subplot(12, 7, np.where(np.array(clusters.index[:NNN]) == cl_num)[0][0]+1)
+        
+        if mode=='IMAGE':
+        
+            pho_list = extract_photons_from_cluster(cl_num, r = 'R500', draw=True)
+        
+        else:
+        
+            cl_T500 = clusters.loc[cl_num]["T500"]
+            cl_lum = clusters.loc[cl_num]["Lx500"]
+    
+            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=True, inside_radius="R500",
+                                            Xplot=False, plot=True, draw_only=mode)
 
-	def func(x, a, b):
-	    return a * x**b
-
-	popt1, pcov1 = curve_fit(func, xx, yy1)
-	popt2, pcov2 = curve_fit(func, xx, yy2)
-
-	#for xxx, xe, yyy, ye, col in zip(xx, x_err, yy2, y2_err, mass_colour):
-	#   plt.plot(xxx, yyy, '.', color=col)
-	#    plt.errorbar(xxx, yyy, xerr=xe, yerr=ye, elinewidth=1, capsize=3, color=col, label='$T_{spec}$ from fit')
-
-	list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
-	plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color='blue')
-
-	#plt.errorbar(xx, yy2, xerr=x_err, yerr=y2_err, linewidth=0, marker='o', markersize=4, alpha=0.1,
-	#             elinewidth=1, capsize=3, color='blue', label='$T_{spec}$ from fit')
-
-	lll = np.linspace(0.95, 1.29, 100)
-	plt.plot(lll, [func(XX, *popt1) for XX in lll],  
-		 color='red', linewidth=3, linestyle=':', alpha=1,
-		 label=f'Best fit: $T_{{500}} = {popt1[0]:.2f} \cdot {{E_{{av}}}}^{{{popt1[1]:.2f}}}$')
-	plt.plot(lll, [func(XX, *popt2) for XX in lll],  
-		 color='blue', linewidth=3, linestyle='--', alpha=1,
-		 label=f'Best fit: $T_{{spec}} = {popt2[0]:.2f} \cdot {{E_{{av}}}}^{{{popt2[1]:.2f}}}$')
-
-	plt.xlabel("Average energy, keV")
-	plt.ylabel("Temperature, keV")
-
-	plt.xscale("log")
-	plt.yscale("log")
-
-	#sc = plt.scatter(xx, yy1, c='red', s=0)
-	#clb = plt.colorbar(sc, label = "$M_{500}$ in units of $10^{14} M_{\odot} h^{-1}$")
-
-	list1, list2, list3 = zip(*sorted(zip(yy1, [n-q for n, q in zip(xx, x_err)], [n+q for n, q in zip(xx, x_err)])))
-	plt.gca().fill_betweenx(list1, list2, list3, interpolate=True, alpha=0.4, color='red')
-
-	#plt.errorbar(xx, yy1, xerr=x_err, linewidth=0, elinewidth=1, capsize=3,
-	#             color='red', marker='o', markersize=4, alpha=0.1, label='$T_{500}$ from simulations')
-
-	#plt.xlim(1.4, 7.5)
-	#plt.ylim(0.9, 1.3)
-
-	plt.xticks([0.95, 1.00, 1.05, 1.10, 1.15, 1.2, 1.25, 1.3], [0.95, 1.00, 1.05, 1.10, 1.15, 1.2, 1.25, 1.3])
-	plt.yticks([2,3,4,5,6,7,8,9,10], [2,3,4,5,6,7,8,9,10])
-
-	for i in range(0, len(aven_usr)):
-	    plt.plot([xx[i]+0.000454, xx[i]+0.000454], 
-		     [yy1[i], yy2[i]], 
-		     color='grey', alpha=0.4, marker='o', markersize=4)
-
-	#plt.grid()
-	plt.legend()
-
-	plt.show()
-
-
-
-
-
-
+            temp_compare[cl_num] = [cl_T500, SP[0][:3]]
+            lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
+            average_ene[cl_num] = [SP[2]]
+        
+        
+        
+        
     

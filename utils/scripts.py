@@ -74,7 +74,7 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
     
     
 
-def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius="R500", Xplot=False, plot=True, also_plot_model=False):
+def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius="R500", Xplot=False, plot=True, draw_only=False, save_atable_model=False):
 
     x.Xset.chatter = 0
     
@@ -130,12 +130,29 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     mmmm = x.Model("myModel")
     
-    if plot and also_plot_model:
+    if plot:
     
-        x.Plot("eemodel")
-        xVals_no_bkg = x.Plot.x()[1:]
-        modVals_no_bkg = x.Plot.model()[1:]
+        model_scale = "model"
+
+        if draw_only!='DATA':
+        
+            if draw_only==False:
+    	        plt.subplot(1,2,1)
+            x.Plot(model_scale)
+            xVals_no_bkg = x.Plot.x()[1:]
+            modVals_no_bkg = x.Plot.model()[1:]
+            
+    # writing our model to FITS-file
     
+    if save_atable_model:
+    	
+        from xspec_table_models import XspecTableModelAdditive
+        
+        parameter = ('Number', [current_cluster_num], False, False)
+        fits11 = XspecTableModelAdditive('atable_models/model_atable_'+str(current_cluster_num)+'.fits', 'myAtableModel', energies[1:], [parameter])
+        fits11.write(0, [a*(1.6*10**(-9))/b/10000/1000 for a, b in zip(photons, np.diff(dummyrsp))], False)
+        fits11.save()
+	    
     # defining the model with background included:
     
     if BACKGROUND:
@@ -155,27 +172,30 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     # plot initial model on the left panel
 
-    if plot and also_plot_model:
+    if plot:
     
-        plt.subplot(121)
-    
-        plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '--', linewidth=2)
-        
-        if BACKGROUND:
-        
-            x.Plot("eemodel")
-            xVals_with_bkg = x.Plot.x()[1:]
-            modVals_with_bkg = x.Plot.model()[1:]
-                
-            plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background", alpha=0.5)
+        if draw_only!='DATA':
 
-        plt.xscale('log')
-        plt.yscale('log')
-        #plt.legend()
+            if draw_only==False:
+                plt.subplot(121)
+
+            plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '--', linewidth=2)
         
-        plt.xlabel(x.Plot.labels()[0])
-        plt.ylabel(x.Plot.labels()[1])
-        plt.title(x.Plot.labels()[2])
+            if BACKGROUND:
+        
+                x.Plot(model_scale)
+                xVals_with_bkg = x.Plot.x()[1:]
+                modVals_with_bkg = x.Plot.model()[1:]
+                
+                plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background", alpha=0.5)
+
+            plt.xscale('log')
+            plt.yscale('log')
+            #plt.legend()
+        
+            plt.xlabel(x.Plot.labels()[0])
+            plt.ylabel(x.Plot.labels()[1])
+            plt.title(x.Plot.labels()[2])
                
     # fakeit for input model (how erosita sees photons)    
         
@@ -197,28 +217,30 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     # plotting fakeit data on the right panel (or without left panel, if plotting all data):
                       
     if plot:
+    
+        if draw_only!='MODEL':
         
-        if also_plot_model:
-             plt.subplot(122)
+            if draw_only==False:
+                plt.subplot(122)
         
-        x.Plot("ldata")        
+            x.Plot("ldata")        
+            
+            xVals = x.Plot.x()
+            xErrors = x.Plot.xErr()
+            yVals = x.Plot.y()
+            yErrors = x.Plot.yErr()
         
-        xVals = x.Plot.x()
-        xErrors = x.Plot.xErr()
-        yVals = x.Plot.y()
-        yErrors = x.Plot.yErr()
-        
-        every = 1 # how much points to draw (doesn't affect fit)
+            every = 1 # how much points to draw (doesn't affect fit)
 
-        plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "All data")
+            plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "All data")
         
-        plt.xscale('log')
-        plt.yscale('log')
-        plt.legend(loc=1) 
-
-        plt.xlabel(x.Plot.labels()[0])
-        plt.ylabel(x.Plot.labels()[1])
-        #plt.title(x.Plot.labels()[2])
+            plt.xscale('log')
+            plt.yscale('log')
+            plt.legend(loc=1) 
+    
+            plt.xlabel(x.Plot.labels()[0])
+            plt.ylabel(x.Plot.labels()[1])
+            #plt.title(x.Plot.labels()[2])
         
     # energy band for fitting:
           
@@ -234,11 +256,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         mod = x.Model('phabs*apec')
         mod(1).values = 0.01      # n_H
         mod(1).frozen = True
-        mod(3).frozen = False     # abundance
-        #mod(3).values = 0.3
+        mod(3).frozen = True     # abundance
+        mod(3).values = 0.3
         mod(4).values = f"{REDSHIFT}"  # of cluster, not of photon list
 
-        #mod.show()
+        mod.show()
         
     else:
     
@@ -258,7 +280,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         for i in range(len(params)):
             mod(i+7).values = list(params.values())[i]
 
-        #mod.show()
+        mod.show()
     
     x.Fit.renorm('auto')
     x.Fit.nIterations = 100
@@ -271,6 +293,12 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         
     x.Xset.parallel.error = 4
     x.Fit.error('2')
+    
+    #x.Xset.parallel.steppar = 4
+    #x.Fit.steppar("2 delta 0.1 5 5 delta 0.1 5")
+    
+    #x.Xset.parallel.goodness = 4
+    #x.Fit.goodness(100)
     
     T_spec = mod(2).values[0]
     T_spec_left = mod(2).error[0]
@@ -287,43 +315,50 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     av_en = np.dot(E_i, s_i)/np.sum(s_i)
     
+    stats_for_header = f" ($stat/dof=$ {x.Fit.statistic/x.Fit.dof:.3f})"
+    
     # plotting best-fit model at data panel:
     
     if plot:
-    
-        if also_plot_model:
-             plt.subplot(122)           
-    
-        plt.axvline(borders[0], linestyle = '--', color='black')
-        plt.axvline(borders[1], linestyle = '--', color='black')
-    
-        x.Plot("ldata")
 
-        xVals = x.Plot.x()
-        xErrors = x.Plot.xErr()
-        yVals = x.Plot.y()
-        yErrors = x.Plot.yErr()
-        modVals = x.Plot.model()
+        if draw_only!='MODEL':
+            
+            if draw_only==False:
+                plt.subplot(122)           
+    
+            plt.axvline(borders[0], linestyle = '--', color='black')
+            plt.axvline(borders[1], linestyle = '--', color='black')
+    
+            x.Plot("ldata")
 
-        plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, color='b', label = "Fit data")
-        plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
-        plt.legend(loc=1, framealpha=1)
-                
-        stats_for_header = ""#f" ($\\chi^2_{{red.}}=$ {x.Fit.statistic/x.Fit.dof:.3f})"
-        plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$"+stats_for_header, fontsize=15)
+            xVals = x.Plot.x()
+            xErrors = x.Plot.xErr()
+            yVals = x.Plot.y()
+            yErrors = x.Plot.yErr()
+            modVals = x.Plot.model()
+
+            plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, color='b', label = "Fit data")
+            plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
+            plt.legend(loc=1, framealpha=1)
+            
+            plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=15)
         
         # plotting best-fit model on left panel:
-               
-        if also_plot_model:
+
+        if draw_only!='DATA':
+        
+            if draw_only==False:
+                plt.subplot(121)
             
-            plt.subplot(121)
-            
-            x.Plot("eemodel")
+            x.Plot(model_scale)
             xVals = x.Plot.x()
             modVals = x.Plot.model()
 
-            plt.plot(xVals, modVals, label="Best-fit model", color='red')
+            plt.plot(xVals, modVals, label="Best-fit model"+stats_for_header, color='red')
             plt.legend(loc=3)
+            
+            plt.axvline(borders[0], linestyle = '--', color='black')
+            plt.axvline(borders[1], linestyle = '--', color='black')
         
             #plt.show()  
         
@@ -357,7 +392,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
         for i in range(N_usr):
 	    
             Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius="R500",
-	                                    Xplot=False, plot=False, also_plot_model=False)
+	                                    Xplot=False, plot=False)
     
             temps[i] = Ts[0][0]
             lumins[i] = Ts[1][0]
