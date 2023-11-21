@@ -1,0 +1,26 @@
+model atable{magneticum/model_atable_19787.fits}
+/*
+fakeit nowrite none
+erosita/erosita_pirmf_v20210719.rmf
+erosita/tm1_arf_open_000101v02.fits
+y
+
+
+10000
+ignore **-0.4 7.0-**
+# pl lda
+mo phabs*apec
+0.01
+1
+0.3
+0
+1
+freeze 1
+newp 4 0.0347
+sho pa
+statistic cstat
+renorm
+fit 100
+cpd /xw
+setpl ene
+pl da mo

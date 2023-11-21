@@ -25,9 +25,9 @@ No background will be applied to fake spectrum #1
 1 spectrum  in use
  
 
-Fit statistic  : C-Statistic                  826.98     using 1024 bins.
+Fit statistic  : C-Statistic                  886.23     using 1024 bins.
 
-Test statistic : Chi-Squared                  714.61     using 1024 bins.
+Test statistic : Chi-Squared                  850.80     using 1024 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
@@ -35,28 +35,28 @@ Test statistic : Chi-Squared                  714.61     using 1024 bins.
  Null hypothesis probability of 1.00e+00 with 1022 degrees of freedom
  Current data and model not fit yet.
 ***Warning: Fit is not current.
-    57 channels (1-57) ignored in spectrum #     1
+   106 channels (1-106) ignored in spectrum #     1
    302 channels (723-1024) ignored in spectrum #     1
 
-Fit statistic  : C-Statistic                  668.43     using 665 bins.
+Fit statistic  : C-Statistic                  684.14     using 616 bins.
 
-Test statistic : Chi-Squared                  649.67     using 665 bins.
+Test statistic : Chi-Squared                  732.77     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 6.37e-01 with 663 degrees of freedom
+ Null hypothesis probability of 6.61e-04 with 614 degrees of freedom
  Current data and model not fit yet.
 
 
-Fit statistic  : C-Statistic                68748.82     using 665 bins.
+Fit statistic  : C-Statistic                19445.81     using 616 bins.
 
-Test statistic : Chi-Squared                24329.09     using 665 bins.
+Test statistic : Chi-Squared                10148.87     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 662 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 613 degrees of freedom
  Current data and model not fit yet.
 
 Parameters have been automatically renormalized.
@@ -69,49 +69,49 @@ Model Model Component  Parameter  Unit     Value
    2    2   apec       kT         keV      1.00000      +/-  0.0          
    3    2   apec       Abundanc            1.00000      frozen
    4    2   apec       Redshift            0.0          frozen
-   5    2   apec       norm                5.17921E-02  +/-  0.0          
+   5    2   apec       norm                5.40130E-02  +/-  0.0          
 ________________________________________________________________________
 
 
-Fit statistic  : C-Statistic                24140.92     using 665 bins.
+Fit statistic  : C-Statistic                20352.06     using 616 bins.
 
-Test statistic : Chi-Squared                25678.43     using 665 bins.
+Test statistic : Chi-Squared                16279.39     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 662 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 613 degrees of freedom
  Current data and model not fit yet.
 
-Fit statistic  : C-Statistic                24140.92     using 665 bins.
+Fit statistic  : C-Statistic                20352.06     using 616 bins.
 
-Test statistic : Chi-Squared                25678.43     using 665 bins.
+Test statistic : Chi-Squared                16279.39     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 663 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 614 degrees of freedom
  Current data and model not fit yet.
   parameter 3 is already frozen.
 
-Fit statistic  : C-Statistic                14578.97     using 665 bins.
+Fit statistic  : C-Statistic                13944.03     using 616 bins.
 
-Test statistic : Chi-Squared                14287.92     using 665 bins.
+Test statistic : Chi-Squared                11187.69     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 663 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 614 degrees of freedom
  Current data and model not fit yet.
 
-Fit statistic  : C-Statistic                15558.28     using 665 bins.
+Fit statistic  : C-Statistic                15142.34     using 616 bins.
 
-Test statistic : Chi-Squared                15244.91     using 665 bins.
+Test statistic : Chi-Squared                12022.42     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 663 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 614 degrees of freedom
  Current data and model not fit yet.
 
 ========================================================================
@@ -122,7 +122,7 @@ Model Model Component  Parameter  Unit     Value
    2    2   apec       kT         keV      1.00000      +/-  0.0          
    3    2   apec       Abundanc            0.300000     frozen
    4    2   apec       Redshift            3.47174E-02  frozen
-   5    2   apec       norm                1.37490E-02  +/-  0.0          
+   5    2   apec       norm                1.82519E-02  +/-  0.0          
 ________________________________________________________________________
 
  Renormalization will be performed automatically
@@ -130,66 +130,66 @@ ________________________________________________________________________
 Default fit statistic is set to: Chi-Squared
    This will apply to all current and newly loaded spectra.
 
-Fit statistic  : Chi-Squared                 9764.99     using 665 bins.
+Fit statistic  : Chi-Squared                 8427.30     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number: 1
 
-Test statistic : Chi-Squared                 9764.99     using 665 bins.
+Test statistic : Chi-Squared                 8427.30     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 663 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 614 degrees of freedom
  Current data and model not fit yet.
 Test statistic is set to: Chi-Squared
 
-Fit statistic  : Chi-Squared                 9764.99     using 665 bins.
+Fit statistic  : Chi-Squared                 8427.30     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number: 1
 
-Test statistic : Chi-Squared                 9764.99     using 665 bins.
+Test statistic : Chi-Squared                 8427.30     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 663 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 614 degrees of freedom
  Current data and model not fit yet.
 Default fit statistic is set to: C-Statistic
    This will apply to all current and newly loaded spectra.
 
-Fit statistic  : C-Statistic                15558.28     using 665 bins.
+Fit statistic  : C-Statistic                15142.34     using 616 bins.
 
-Test statistic : Chi-Squared                15244.91     using 665 bins.
+Test statistic : Chi-Squared                12022.42     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 0.00e+00 with 663 degrees of freedom
+ Null hypothesis probability of 0.00e+00 with 614 degrees of freedom
  Current data and model not fit yet.
                                    Parameters
 C-Statistic  |beta|/N    Lvl          2:kT        5:norm
-8960.27      9501.1       -3       1.23376     0.0144205
-3966.79      141822       -4       1.54415     0.0179696
-1693.64      74493.5      -5       2.00818     0.0207974
-1079.74      15984.5      -6       2.58713     0.0216054
-975.96       897.272      -7       3.06209     0.0216559
-971.292      1558.16      -8       3.20414     0.0217246
-971.279      98.3385      -9       3.21231     0.0217291
-971.279      0.337934      1       3.21232     0.0217291
+10432.8      9356.34      -3       1.16156     0.0192941
+6198.07      85420.9      -4       1.35971     0.0237887
+3472.07      57077.4      -5       1.58659     0.0287298
+1951.16      14276.6      -6       1.93492     0.0317612
+1477.69      2269.5       -7       2.35037     0.0322108
+1427.46      1789.3       -8       2.58882     0.0320519
+1427.1       334.996      -9       2.61664     0.0320705
+1427.1       4.83271     -10       2.61519     0.0320704
 ==============================
  Variances and Principal Axes
                  2        5  
- 1.7384E-08| -0.0001   1.0000  
- 5.1580E-03|  1.0000   0.0001  
+ 3.6516E-08|  0.0002   1.0000  
+ 2.0178E-03|  1.0000  -0.0002  
 ------------------------------
 
 ========================
   Covariance Matrix
         1           2   
-   5.158e-03   6.660e-07
-   6.660e-07   1.747e-08
+   2.018e-03  -4.513e-07
+  -4.513e-07   3.662e-08
 ------------------------
 
 ========================================================================
@@ -197,32 +197,32 @@ Model phabs<1>*apec<2> Source No.: 1   Active/On
 Model Model Component  Parameter  Unit     Value
  par  comp
    1    1   phabs      nH         10^22    1.00000E-02  frozen
-   2    2   apec       kT         keV      3.21232      +/-  7.18190E-02  
+   2    2   apec       kT         keV      2.61519      +/-  4.49197E-02  
    3    2   apec       Abundanc            0.300000     frozen
    4    2   apec       Redshift            3.47174E-02  frozen
-   5    2   apec       norm                2.17291E-02  +/-  1.32175E-04  
+   5    2   apec       norm                3.20704E-02  +/-  1.91356E-04  
 ________________________________________________________________________
 
 
-Fit statistic  : C-Statistic                  971.28     using 665 bins.
+Fit statistic  : C-Statistic                 1427.10     using 616 bins.
 
-Test statistic : Chi-Squared                  928.80     using 665 bins.
+Test statistic : Chi-Squared                 1573.44     using 616 bins.
 
 ***Warning: Chi-square may not be valid due to bins with zero variance
             in spectrum number(s): 1 
 
- Null hypothesis probability of 3.49e-11 with 663 degrees of freedom
+ Null hypothesis probability of 1.94e-85 with 614 degrees of freedom
  Parameter   Confidence Range (2.706)
-     2      3.09579      3.34859    (-0.116538,0.136262)
+     2      2.54853      2.68944    (-0.0666547,0.0742495)
 Spectrum 1: Lower range bound    0.0966447 reset by matrix bound to          0.1
-Model Luminosity 7.7011e+43 ergs/s  (0.10347 - 10.000 keV rest frame)
+Model Luminosity 1.0436e+44 ergs/s  (0.10347 - 10.000 keV rest frame)
      (z = 0.0347 H0 =  70.0 q0 =  0.00 Lambda0 = 0.730)
 
 1 file 1 spectrum 
 Spectrum 1  Spectral Data File: fakeit.pha
-Net count rate (cts/s) for Spectrum:1  2.716e+00 +/- 1.648e-02
+Net count rate (cts/s) for Spectrum:1  2.817e+00 +/- 1.678e-02
  Assigned to Data Group 1 and Plot Group 1
-  Noticed Channels:  58-722
+  Noticed Channels:  107-722
   Telescope: eROSITA Instrument: TM1  Channel Type: PI
   Exposure Time: 1e+04 sec
  Using fit statistic: cstat

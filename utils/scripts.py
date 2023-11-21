@@ -49,6 +49,8 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
             whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
             whattodraw = whattodraw.drop("whattodraw1", axis=1)
             #plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
+            whattodraw = whattodraw[whattodraw["ENERGY"]<7.0]   # changing upper energy limit
+            whattodraw = whattodraw[whattodraw["ENERGY"]>0.7]   # changing lower energy limit
             plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
                        bins=int(2*R_500_rescaled*3600/ang_res),
                        norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
@@ -80,14 +82,20 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     # binning for proper imaging of model (doesn't affect fitting)
     erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
+    #print(erosita_binning)
   
     N_channels = 1024
     
-    # there is no big difference which binning to choose
+    # there is a big difference which binning to choose
   
-    #dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
+    dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
     #dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
-    dummyrsp = np.append(erosita_binning, [12.0])
+    #dummyrsp = np.append(erosita_binning, [12.0])
+        
+    #plt.plot(np.linspace(0,1024,1024), erosita_binning)
+    #plt.plot(np.linspace(0,1024,1024), dummyrsp[1:])
+    #plt.plot(np.linspace(0,1024,1024), np.exp([a/412 for a in np.linspace(0,1024,1024)]))
+    #plt.show()
     
     list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, draw=False)
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
@@ -95,11 +103,12 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
 
     # spectra from photons
-    photons, energies = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
-
+    photons, energies_bins = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
+    
+    energies = [(a+b)/2 for a, b in zip(energies_bins[:-1], energies_bins[1:])]
+    
     model_input = [a/10000/1000 for a in photons]
-
-    # 10000 (s) is exposition time and 1000 (cm2) is nominal area
+    # 10000 (s) is exposition time and 1000 (cm2) is nominal area      
     
     if Xplot:
         x.Plot.device = "/xs"
@@ -115,7 +124,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     def myModel(engs, params, flux):
         for i in range(len(engs)-1):
             if engs[i]>0.1 and engs[i]<12.0:
-                val = np.interp(engs[i], dummyrsp[1:], model_input)
+                val = np.interp(engs[i], energies, model_input)
                 #print(i, engs[i], val)
                 flux[i] = val
             else:
@@ -126,13 +135,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     x.AllModels.addPyMod(myModel, myModelParInfo, 'add')
     
     # dummy rsp for model in suitable form
-    x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=1024)
+    x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=N_channels)
     
     mmmm = x.Model("myModel")
     
     if plot:
     
-        model_scale = "model"
+        model_scale = "model" # emodel, eemodel
 
         if draw_only!='DATA':
         
@@ -149,10 +158,21 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         from xspec_table_models import XspecTableModelAdditive
         
         parameter = ('Number', [current_cluster_num], False, False)
-        fits11 = XspecTableModelAdditive('atable_models/model_atable_'+str(current_cluster_num)+'.fits', 'myAtableModel', energies[1:], [parameter])
-        fits11.write(0, [a*(1.6*10**(-9))/b/10000/1000 for a, b in zip(photons, np.diff(dummyrsp))], False)
+        fits11 = XspecTableModelAdditive('model_atable_'+str(current_cluster_num)+'.fits', 'myAtableModel', np.array(energies), [parameter])
+        # [erg/s/cm2/keV]
+        atablemodel_input = [a*b*(1.6*10**(-9))/10000/1000/c for a, b, c in zip(photons, energies, np.diff(energies_bins))]
+        fits11.write(0, atablemodel_input, False) 
         fits11.save()
-	    
+        	
+        x.Model("atable{model_atable_"+str(current_cluster_num)+".fits}")
+        
+        if draw_only==False:
+    	    plt.subplot(1,2,1)
+        x.Plot('model')
+        xVals_atable = x.Plot.x()[1:]
+        modVals_atable = x.Plot.model()[1:]     
+    
+    		    
     # defining the model with background included:
     
     if BACKGROUND:
@@ -179,7 +199,12 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             if draw_only==False:
                 plt.subplot(121)
 
-            plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '--', linewidth=2)
+            plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '-', linewidth=2)
+            
+            if save_atable_model:
+                plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')
+                
+            #plt.plot(energies, [a/b for a, b in zip(model_input, energies)], color='magenta')
         
             if BACKGROUND:
         
@@ -306,7 +331,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
-    
+
     # average energy:
     
     s_i = x.AllData(1).values
@@ -391,7 +416,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
     
         for i in range(N_usr):
 	    
-            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius="R500",
+            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.7, 7.0], BACKGROUND=bkg, inside_radius="R500",
 	                                    Xplot=False, plot=False)
     
             temps[i] = Ts[0][0]
@@ -425,62 +450,6 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
         df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
         
     return temp_usr1, lumin_usr1, aven_usr1
-
-
-def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr):
-    
-    plt.figure(figsize=(11.5,5.5))
-
-    plt.subplots_adjust()
-
-    plt.subplot(121)
-
-    xx  = [a[1] for a in x_array]#.values()]
-    xxe = [a[2] for a in x_array]#.values()]
-    yy  = [a[1] for a in y_array]#.values()]
-    yye = [a[2] for a in y_array]#.values()]
-
-    plt.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
-                 capsize=3, color=clr, marker='o', markersize=3)
-
-    plt.plot([1, 9], [1, 9], color='black', linewidth=1)
-
-    plt.xlabel(x_label, fontsize=11)
-    plt.ylabel(y_label_left, fontsize=11)
-
-    plt.xlim(1.2, 8.7)
-    plt.ylim(1.2, 8.7)
-
-
-    plt.subplot(222)
-
-    plt.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
-                 yerr=[a+b for a, b in zip(xxe, yye)], linewidth=0, elinewidth=1, 
-                 capsize=3, color=clr, marker='o', markersize=3)
-
-    plt.axhline(0, color='black', linewidth=1)
-    plt.ylabel(y_label_right_up, fontsize=11)
-    
-    leftb, rightb = plt.gca().get_xlim()
-
-    plt.subplot(224)
-    
-    y_p = [(YY-XX)/XX for YY, XX in zip(yy, xx)]
-    y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
-    
-    plt.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
-    plt.scatter(xx, y_p, color=clr, marker='o', s=3)
-                 
-    list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
-    plt.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
-
-    plt.axhline(0, color='black', linewidth=1)
-    plt.ylabel(y_label_right_down, fontsize=11)
-    plt.xlabel(x_label, fontsize=11)
-    
-    plt.xlim(leftb, rightb)
-
-    plt.show()
 
 
 
