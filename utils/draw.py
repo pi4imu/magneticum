@@ -20,8 +20,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     plt.xlabel(x_label, fontsize=11)
     plt.ylabel(y_label_left, fontsize=11)
 
-    plt.xlim(1.2, 8.7)
-    plt.ylim(1.2, 8.7)
+    plt.xlim(1.2, 7.3)
+    plt.ylim(1.2, 7.3)
 
 
     plt.subplot(222)
@@ -97,7 +97,7 @@ def draw_84_panels(mode):
             cl_T500 = clusters.loc[cl_num]["T500"]
             cl_lum = clusters.loc[cl_num]["Lx500"]
     
-            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=True, inside_radius="R500",
+            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius="R500",
                                             Xplot=False, plot=True, draw_only=mode)
 
             temp_compare[cl_num] = [cl_T500, SP[0][:3]]

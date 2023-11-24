@@ -26,7 +26,7 @@ def T_X(MM500, zz, mean_T=5, mean_M=3):
     
     for i in range(0, len(MM500)):
     
-    	ts[i] = mean_T * (MM500[i]/mean_M/10**14)**(0.65) #* E(zz[i])**(0.65)  / np.sqrt(1+zz[i])
+    	ts[i] = mean_T * (MM500[i]/mean_M/10**14*0.704)**(0.65) * E(zz[i])**(0.65) 
     
     return ts
 
@@ -39,7 +39,7 @@ def L_X(MM500, zz, hh):
     
     for i in range(0, len(MM500)):
     
-    	ls[i] = 1.056 * hh**(-2) * (MM500[i]/3.9/10**14)**1.61 * E(zz[i])**(.85) #* (1+zz[i])**2
+    	ls[i] = 1.056 * hh**(-2) * (MM500[i]/3.9/10**14)**1.61 * E(zz[i])**(.85) 
     
     return ls
     
@@ -58,7 +58,7 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
     x.Xset.chatter = 10
     
-    return L_05_20/L_bol*lumin_bol #/ E(redshift) #* (1+redshift)**2
+    return L_05_20/L_bol*lumin_bol
     
 def draw_panel(xx, yy1, yy2):
 

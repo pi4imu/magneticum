@@ -81,15 +81,15 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     x.Xset.chatter = 0
     
     # binning for proper imaging of model (doesn't affect fitting)
-    erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
+ #   erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
     #print(erosita_binning)
   
     N_channels = 1024
     
     # there is a big difference which binning to choose
   
-    dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
-    #dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
+    #dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
+    dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
     #dummyrsp = np.append(erosita_binning, [12.0])
         
     #plt.plot(np.linspace(0,1024,1024), erosita_binning)
@@ -106,8 +106,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     photons, energies_bins = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
     
     energies = [(a+b)/2 for a, b in zip(energies_bins[:-1], energies_bins[1:])]
+    dE = np.diff(energies_bins)
     
     model_input = [a/10000/1000 for a in photons]
+    
+    # The output flux array for an additive model should be in terms of photons/cm$^2$/s (not photons/cm$^2$/s/keV) 
+    # i.e. it is the model spectrum integrated over the energy bin.
+    #print(dE, np.diff(energies))
+    
     # 10000 (s) is exposition time and 1000 (cm2) is nominal area      
     
     if Xplot:
@@ -122,11 +128,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     x.AllModels.clear()
 
     def myModel(engs, params, flux):
+        print(len(engs))
         for i in range(len(engs)-1):
             if engs[i]>0.1 and engs[i]<12.0:
-                val = np.interp(engs[i], energies, model_input)
+                val = np.interp(engs[i], energies, model_input/dE)
                 #print(i, engs[i], val)
-                flux[i] = val
+                
+                flux[i] = val*(engs[i+1]-engs[i])
+             
             else:
                 flux[i] = 0
 
@@ -168,7 +177,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         
         if draw_only==False:
     	    plt.subplot(1,2,1)
-        x.Plot('model')
+        x.Plot(model_scale)
         xVals_atable = x.Plot.x()[1:]
         modVals_atable = x.Plot.model()[1:]     
     
@@ -204,8 +213,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             if save_atable_model:
                 plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')
                 
-            #plt.plot(energies, [a/b for a, b in zip(model_input, energies)], color='magenta')
-        
+           # plt.plot(energies, [a/10000/1000/b for a,b in zip(photons, dE)], color='magenta')
+            
             if BACKGROUND:
         
                 x.Plot(model_scale)
@@ -416,7 +425,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
     
         for i in range(N_usr):
 	    
-            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.7, 7.0], BACKGROUND=bkg, inside_radius="R500",
+            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius="R500",
 	                                    Xplot=False, plot=False)
     
             temps[i] = Ts[0][0]
