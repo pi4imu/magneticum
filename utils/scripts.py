@@ -40,25 +40,28 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
     if draw:
     
         ang_res = 5
+        
+        half_size = 1.5*R_500_rescaled
     
         #plt.figure(figsize=(6,5))
         if not draw_new:
             plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=0.001)
         else:
-            SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < 1.1*R_vir) & (np.abs(SLICE1["DEC"]-DEC_c) < 1.1*R_vir), True, False)
+            SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < half_size) & (np.abs(SLICE1["DEC"]-DEC_c) < half_size), True, False)
             whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
             whattodraw = whattodraw.drop("whattodraw1", axis=1)
-            #plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
-            whattodraw = whattodraw[whattodraw["ENERGY"]<7.0]   # changing upper energy limit
-            whattodraw = whattodraw[whattodraw["ENERGY"]>0.7]   # changing lower energy limit
+            #plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], 
+            #cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
+          #  whattodraw = whattodraw[whattodraw["ENERGY"]<7.0]   # changing upper energy limit
+          #  whattodraw = whattodraw[whattodraw["ENERGY"]>0.7]   # changing lower energy limit
             plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
-                       bins=int(2*R_500_rescaled*3600/ang_res),
+                       bins=int(2*half_size*3600/ang_res),
                        norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
         
         plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))
-        plt.xlim(RA_c-1.1*R_vir, RA_c+1.1*R_vir)
-        plt.ylim(DEC_c-1.1*R_vir, DEC_c+1.1*R_vir)
+        plt.xlim(RA_c-half_size, RA_c+half_size)
+        plt.ylim(DEC_c-half_size, DEC_c+half_size)
         plt.xlabel("RA")
         plt.ylabel("DEC")
         plt.colorbar(label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
@@ -66,9 +69,9 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
         #plt.tight_layout()
         
         handles, labels = plt.gca().get_legend_handles_labels()
-        l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
+      #  l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
         l2 = Line2D([], [], label="$R_{500}$", color='orangered', linestyle='--', linewidth=3)
-        handles.extend([l1, l2])
+        handles.extend([l2])
         plt.legend(handles=handles, loc=3)
         #plt.show()
     
@@ -76,26 +79,18 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
     
     
 
-def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius="R500", Xplot=False, plot=True, draw_only=False, save_atable_model=False):
+def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius="R500", Xplot=False, plot=True, draw_only=False, draw_and_save_atable_model=False):
 
     x.Xset.chatter = 0
     
     # binning for proper imaging of model (doesn't affect fitting)
- #   erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
-    #print(erosita_binning)
+    # erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
   
     N_channels = 1024
     
-    # there is a big difference which binning to choose
-  
-    #dummyrsp = np.linspace(0.1, 12.0, N_channels+1)
-    dummyrsp = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
-    #dummyrsp = np.append(erosita_binning, [12.0])
-        
-    #plt.plot(np.linspace(0,1024,1024), erosita_binning)
-    #plt.plot(np.linspace(0,1024,1024), dummyrsp[1:])
-    #plt.plot(np.linspace(0,1024,1024), np.exp([a/412 for a in np.linspace(0,1024,1024)]))
-    #plt.show()
+    #binning = np.linspace(0.1, 12.0, N_channels+1)
+    binning = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
+    #binning = np.append(erosita_binning, [12.0])
     
     list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, draw=False)
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
@@ -103,16 +98,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
 
     # spectra from photons
-    photons, energies_bins = np.histogram(list_of_photons["ENERGY"], bins = dummyrsp)
+    
+    photons, energies_bins = np.histogram(list_of_photons["ENERGY"], bins = binning)
     
     energies = [(a+b)/2 for a, b in zip(energies_bins[:-1], energies_bins[1:])]
     dE = np.diff(energies_bins)
     
     model_input = [a/10000/1000 for a in photons]
-    
-    # The output flux array for an additive model should be in terms of photons/cm$^2$/s (not photons/cm$^2$/s/keV) 
-    # i.e. it is the model spectrum integrated over the energy bin.
-    #print(dE, np.diff(energies))
     
     # 10000 (s) is exposition time and 1000 (cm2) is nominal area      
     
@@ -128,14 +120,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     x.AllModels.clear()
 
     def myModel(engs, params, flux):
-        print(len(engs))
         for i in range(len(engs)-1):
             if engs[i]>0.1 and engs[i]<12.0:
                 val = np.interp(engs[i], energies, model_input/dE)
                 #print(i, engs[i], val)
-                
                 flux[i] = val*(engs[i+1]-engs[i])
-             
             else:
                 flux[i] = 0
 
@@ -162,7 +151,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             
     # writing our model to FITS-file
     
-    if save_atable_model:
+    if draw_and_save_atable_model:
+    	
     	
         from xspec_table_models import XspecTableModelAdditive
         
@@ -175,12 +165,12 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         	
         x.Model("atable{model_atable_"+str(current_cluster_num)+".fits}")
         
-        if draw_only==False:
-    	    plt.subplot(1,2,1)
-        x.Plot(model_scale)
-        xVals_atable = x.Plot.x()[1:]
-        modVals_atable = x.Plot.model()[1:]     
-    
+        if plot:
+            if draw_only==False:
+    	        plt.subplot(1,2,1)
+            x.Plot(model_scale)
+            xVals_atable = x.Plot.x()[1:]
+            modVals_atable = x.Plot.model()[1:]     
     		    
     # defining the model with background included:
     
@@ -197,7 +187,6 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         myModel_with_bkg(2).values = 1           # norm for myModel
         myModel_with_bkg(2).frozen = True
         myModel_with_bkg(3).values = np.pi*R_500_rescaled**2*3600 # area of cluster = factor before background
-
     
     # plot initial model on the left panel
 
@@ -210,7 +199,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
 
             plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '-', linewidth=2)
             
-            if save_atable_model:
+            if draw_and_save_atable_model:
                 plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')
                 
            # plt.plot(energies, [a/10000/1000/b for a,b in zip(photons, dE)], color='magenta')
@@ -271,6 +260,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             plt.xscale('log')
             plt.yscale('log')
             plt.legend(loc=1) 
+            
+            plt.axvline(0.7, ls=':', color='g')
     
             plt.xlabel(x.Plot.labels()[0])
             plt.ylabel(x.Plot.labels()[1])

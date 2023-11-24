@@ -71,11 +71,11 @@ def draw_84_panels(mode):
     NNN = 84
     
     if mode=='IMAGE':
-        size=6
+        size = 6
     else:
         size = 5
 
-    plt.figure(figsize=((size)*7+6, size*12+11))
+    plt.figure(figsize=((size)*7+6, 5*12+11))
     plt.tight_layout()
     
     if mode!='IMAGE':
@@ -97,7 +97,7 @@ def draw_84_panels(mode):
             cl_T500 = clusters.loc[cl_num]["T500"]
             cl_lum = clusters.loc[cl_num]["Lx500"]
     
-            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius="R500",
+            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=True, inside_radius="R500",
                                             Xplot=False, plot=True, draw_only=mode)
 
             temp_compare[cl_num] = [cl_T500, SP[0][:3]]
