@@ -1,67 +1,81 @@
 def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr):
     
-    plt.figure(figsize=(11.5,5.5))
+    fig = plt.figure(figsize=(11.5,5.5))
+    
+    gs = GridSpec(2, 4, height_ratios=[1, 1], width_ratios=[5, 1, 4, 1], hspace = 0.2, wspace = 0.)
+    ax1 = fig.add_subplot(gs[:, 0])
+    ax2 = fig.add_subplot(gs[2])
+    ax3 = fig.add_subplot(gs[6])
+    ax4 = fig.add_subplot(gs[3])
+    ax5 = fig.add_subplot(gs[7])
 
-    plt.subplots_adjust()
-    #plt.tight_layout()
+    #plt.subplots_adjust()
+    #gs.tight_layout(figure=fig)
 
-    plt.subplot(121)
+    #plt.subplot(121)
 
     xx  = [a[1] for a in x_array]
     xxe = [a[2] for a in x_array]
     yy  = [a[1] for a in y_array]
     yye = [a[2] for a in y_array]
 
-    plt.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
+    ax1.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
                  capsize=3, color=clr, marker='o', markersize=3)
 
-    plt.plot([1, 9], [1, 9], color='black', linewidth=1)
+    ax1.plot([1, 9], [1, 9], color='black', linewidth=1)
 
-    plt.xlabel(x_label, fontsize=11)
-    plt.ylabel(y_label_left, fontsize=11)
+    ax1.set_xlabel(x_label, fontsize=11)
+    ax1.set_ylabel(y_label_left, fontsize=11)
 
-    plt.xlim(1.2, 7.3)
-    plt.ylim(1.2, 7.3)
+    ax1.set_xlim(1.2, 7.3)
+    ax1.set_ylim(1.2, 7.3)
 
 
-    plt.subplot(222)
+    #plt.subplot(222)
 
-    plt.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
+    ax2.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
                  yerr=[a+b for a, b in zip(xxe, yye)], linewidth=0, elinewidth=1, 
                  capsize=3, color=clr, marker='o', markersize=3)
 
-    plt.axhline(0, color='black', linewidth=1)
-    plt.ylabel(y_label_right_up, fontsize=11)
+    ax2.axhline(0, color='black', linewidth=1)
+    ax2.set_ylabel(y_label_right_up, fontsize=11)
     
-    leftb, rightb = plt.gca().get_xlim()
-    leftc, rightc = plt.gca().get_ylim()
+    leftb, rightb = ax2.get_xlim()
+    leftc, rightc = ax2.get_ylim()
     
-    #plt.subplot(2,5,5)
-    
-    #plt.hist([YY-XX for YY, XX in zip(yy, xx)], bins=30, histtype='stepfilled', orientation="horizontal", color=clr)
-    #plt.ylim((leftc, rightc))
+    ax4.hist([YY-XX for YY, XX in zip(yy, xx)], bins=20, histtype='stepfilled', orientation="horizontal", color=clr)
+    ax4.set_ylim((leftc, rightc))
+    ax4.set_xscale("log")
+    ax4.set_yticks([],[])
+    ax4.set_xticks([],[])
+    ax4.xaxis.set_ticks_position('none') 
+    ax4.axhline(0, color='black', linewidth=1)
 
-    plt.subplot(224)
+    #plt.subplot(224)
     
     y_p = [(YY-XX)/XX for YY, XX in zip(yy, xx)]
     y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
     
-    plt.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
-    plt.scatter(xx, y_p, color=clr, marker='o', s=3)
+    ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
+    ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
                  
     list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
-    plt.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
+    ax3.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
 
-    plt.axhline(0, color='black', linewidth=1)
-    plt.ylabel(y_label_right_down, fontsize=11)
-    plt.xlabel(x_label, fontsize=11)
+    ax3.axhline(0, color='black', linewidth=1)
+    ax3.set_ylabel(y_label_right_down, fontsize=11)
+    ax3.set_xlabel(x_label, fontsize=11)
     
-    plt.xlim(leftb, rightb)
-    leftd, rightd = plt.gca().get_ylim()
+    ax3.set_xlim(leftb, rightb)
+    leftd, rightd = ax3.get_ylim()
     
-    #plt.subplot(2,5,10)
-    #plt.hist(y_p, bins=30, histtype='stepfilled', orientation="horizontal", color=clr)
-    #plt.ylim((leftd, rightd))
+    ax5.hist(y_p, bins=20, histtype='stepfilled', orientation="horizontal", color=clr)
+    ax5.set_ylim((leftd, rightd))
+    ax5.set_xscale("log")
+    ax5.set_yticks([],[])
+    ax5.set_xticks([],[])
+    ax5.xaxis.set_ticks_position('none') 
+    ax5.axhline(0, color='black', linewidth=1)  
 
     plt.show()
     
