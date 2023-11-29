@@ -1,6 +1,9 @@
-def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr):
+def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn=10):
     
     fig = plt.figure(figsize=(11.5,5.5))
+    
+        
+    plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
     
     gs = GridSpec(2, 4, height_ratios=[1, 1], width_ratios=[5, 1, 4, 1], hspace = 0.2, wspace = 0.)
     ax1 = fig.add_subplot(gs[:, 0])
@@ -59,8 +62,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
     ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
                  
-    list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
-    ax3.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
+    #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
+    #ax3.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
 
     ax3.axhline(0, color='black', linewidth=1)
     ax3.set_ylabel(y_label_right_down, fontsize=11)

@@ -398,7 +398,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
     lumin_usr1 = {}
     aven_usr1 = {}
     
-    for cl_num in clusters.index[:]:
+    for cl_num in tqdm(clusters.index[:]):
     
         mean_temp = 0
         mean_lum = 0
@@ -408,7 +408,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
         cl_T500 = clusters.loc[cl_num]["T500"]
         cl_lum = clusters.loc[cl_num]["Lx500"]
                 
-        print(" |", cl_num,": ", end="")
+        #print(" |", cl_num,": ", end="")
         
         temps = np.zeros(N_usr)
         lumins = np.zeros(N_usr)
@@ -423,7 +423,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
             lumins[i] = Ts[1][0]
             avens[i] = Ts[2]
 	    
-            print(i+1, end="")
+            #print(i+1, end="")
 	    
         mean_temp = np.mean(temps)
         mean_lum = np.mean(lumins)
