@@ -54,16 +54,27 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
             #cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
           #  whattodraw = whattodraw[whattodraw["ENERGY"]<7.0]   # changing upper energy limit
           #  whattodraw = whattodraw[whattodraw["ENERGY"]>0.7]   # changing lower energy limit
-            plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
+            nmhg, _, _, _ = plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
                        bins=int(2*half_size*3600/ang_res),
                        norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
-        
+	    
+            whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))
+            reeeversed = [a*ang_res/60/60 for a in whereee]
+            
+            xeeec = plt.gca().get_xlim() + reeeversed[0]
+            yeeec = plt.gca().get_ylim() + reeeversed[1]
+            
+            #print(xeeec[0])
+            #print(yeeec[0])
+            
+            plt.scatter(xeeec, yeeec, color='red')
+            
         plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))
         plt.xlim(RA_c-half_size, RA_c+half_size)
         plt.ylim(DEC_c-half_size, DEC_c+half_size)
-        plt.xlabel("RA")
-        plt.ylabel("DEC")
+        plt.xlabel("RA, deg")
+        plt.ylabel("DEC, deg")
         plt.colorbar(label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
         plt.title('#'+str(current_cluster_number), fontsize=15)
         #plt.tight_layout()
@@ -261,7 +272,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             plt.yscale('log')
             plt.legend(loc=1) 
             
-            plt.axvline(0.7, ls=':', color='g')
+            #plt.axvline(0.7, ls=':', color='g')
     
             plt.xlabel(x.Plot.labels()[0])
             plt.ylabel(x.Plot.labels()[1])
@@ -414,7 +425,7 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
         lumins = np.zeros(N_usr)
         avens = np.zeros(N_usr)
     
-        for i in range(N_usr):
+        for i in tqdm(range(N_usr), leave=False):
 	    
             Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius="R500",
 	                                    Xplot=False, plot=False)

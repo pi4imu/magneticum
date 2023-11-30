@@ -30,9 +30,9 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_xlabel(x_label, fontsize=11)
     ax1.set_ylabel(y_label_left, fontsize=11)
 
-    ax1.set_xlim(1.2, 7.3)
-    ax1.set_ylim(1.2, 7.3)
-
+    ax1.set_xlim(1., 7.3)
+    ax1.set_ylim(1., 7.3)
+    #ax1.scatter(2.39539, 1.1103637527004389, color='red')
 
     #plt.subplot(222)
 
@@ -42,17 +42,22 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
 
     ax2.axhline(0, color='black', linewidth=1)
     ax2.set_ylabel(y_label_right_up, fontsize=11)
+#    ax2.set_ylim(-1.5, 3.5)
     
     leftb, rightb = ax2.get_xlim()
     leftc, rightc = ax2.get_ylim()
-    
+        
     ax4.hist([YY-XX for YY, XX in zip(yy, xx)], bins=20, histtype='stepfilled', orientation="horizontal", color=clr)
     ax4.set_ylim((leftc, rightc))
-    ax4.set_xscale("log")
+    #ax4.set_xscale("log")
     ax4.set_yticks([],[])
     ax4.set_xticks([],[])
     ax4.xaxis.set_ticks_position('none') 
     ax4.axhline(0, color='black', linewidth=1)
+    
+    RMS = np.sqrt(sum([(el**2) for el in [YY-XX for YY, XX in zip(yy, xx)]]))/len([YY-XX for YY, XX in zip(yy, xx)])    
+    xxxccc = np.linspace(-3,3,100)
+    ax4.plot(stats.norm.pdf(xxxccc, loc=np.mean([YY-XX for YY, XX in zip(yy, xx)]), scale=RMS), xxxccc, color='black')
 
     #plt.subplot(224)
     
@@ -68,19 +73,24 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.axhline(0, color='black', linewidth=1)
     ax3.set_ylabel(y_label_right_down, fontsize=11)
     ax3.set_xlabel(x_label, fontsize=11)
+ #   ax2.set_ylim(-0.6, 0.8)
     
     ax3.set_xlim(leftb, rightb)
     leftd, rightd = ax3.get_ylim()
-    
+        
     ax5.hist(y_p, bins=20, histtype='stepfilled', orientation="horizontal", color=clr)
     ax5.set_ylim((leftd, rightd))
     ax5.set_xscale("log")
     ax5.set_yticks([],[])
     ax5.set_xticks([],[])
     ax5.xaxis.set_ticks_position('none') 
-    ax5.axhline(0, color='black', linewidth=1)  
+    ax5.axhline(0, color='black', linewidth=1)
+    
+  #  RMS = np.sqrt(sum([(el**2) for el in y_p]))/len(y_p)
+  #  xxxccc = np.linspace(-3,3,100)
+  #  ax5.plot(stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS), xxxccc, color='black')
 
-    plt.show()
+    #plt.show()
     
     
 def draw_84_panels(mode):
