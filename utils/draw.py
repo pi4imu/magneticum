@@ -42,12 +42,12 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
 
     ax2.axhline(0, color='black', linewidth=1)
     ax2.set_ylabel(y_label_right_up, fontsize=11)
-#    ax2.set_ylim(-1.5, 3.5)
+    #ax2.set_ylim(-3, 3)
     
     leftb, rightb = ax2.get_xlim()
     leftc, rightc = ax2.get_ylim()
         
-    ax4.hist([YY-XX for YY, XX in zip(yy, xx)], bins=20, histtype='stepfilled', orientation="horizontal", color=clr)
+    ba, bi, _ = ax4.hist([YY-XX for YY, XX in zip(yy, xx)], bins=20, histtype='stepfilled', orientation="horizontal", color=clr, density=True)
     ax4.set_ylim((leftc, rightc))
     #ax4.set_xscale("log")
     ax4.set_yticks([],[])
@@ -55,9 +55,10 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax4.xaxis.set_ticks_position('none') 
     ax4.axhline(0, color='black', linewidth=1)
     
-    RMS = np.sqrt(sum([(el**2) for el in [YY-XX for YY, XX in zip(yy, xx)]]))/len([YY-XX for YY, XX in zip(yy, xx)])    
+    RMS = np.sqrt( sum([(el**2) for el in [YY-XX for YY, XX in zip(yy, xx)]])/len([YY-XX for YY, XX in zip(yy, xx)]) )  
     xxxccc = np.linspace(-3,3,100)
-    ax4.plot(stats.norm.pdf(xxxccc, loc=np.mean([YY-XX for YY, XX in zip(yy, xx)]), scale=RMS), xxxccc, color='black')
+    yyyccc = stats.norm.pdf(xxxccc, loc=np.mean([YY-XX for YY, XX in zip(yy, xx)]), scale=RMS)
+    ax4.plot(yyyccc, xxxccc, color='black')
 
     #plt.subplot(224)
     
@@ -73,22 +74,23 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.axhline(0, color='black', linewidth=1)
     ax3.set_ylabel(y_label_right_down, fontsize=11)
     ax3.set_xlabel(x_label, fontsize=11)
- #   ax2.set_ylim(-0.6, 0.8)
+    #ax3.set_ylim(-0.8, 0.8)
     
     ax3.set_xlim(leftb, rightb)
     leftd, rightd = ax3.get_ylim()
         
-    ax5.hist(y_p, bins=20, histtype='stepfilled', orientation="horizontal", color=clr)
+    ba, bi, _ = ax5.hist(y_p, bins=20, histtype='stepfilled', orientation="horizontal", color=clr, density=True)
     ax5.set_ylim((leftd, rightd))
-    ax5.set_xscale("log")
+    #ax5.set_xscale("log")
     ax5.set_yticks([],[])
     ax5.set_xticks([],[])
     ax5.xaxis.set_ticks_position('none') 
     ax5.axhline(0, color='black', linewidth=1)
     
-  #  RMS = np.sqrt(sum([(el**2) for el in y_p]))/len(y_p)
-  #  xxxccc = np.linspace(-3,3,100)
-  #  ax5.plot(stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS), xxxccc, color='black')
+    RMS = np.sqrt(sum([(el**2) for el in y_p])/len(y_p))
+    xxxccc = np.linspace(-1,1,100)
+    yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
+    ax5.plot(yyyccc, xxxccc, color='black')
 
     #plt.show()
     

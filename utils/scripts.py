@@ -67,7 +67,7 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
             #print(xeeec[0])
             #print(yeeec[0])
             
-            plt.scatter(xeeec, yeeec, color='red')
+            #plt.scatter(xeeec, yeeec, color='red')
             
         plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))

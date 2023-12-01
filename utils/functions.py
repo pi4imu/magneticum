@@ -63,12 +63,12 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
 def draw_panel(xx, yy1, yy2):
 
     plt.scatter(xx, yy1, c=zs, cmap='viridis', s=10, label = 'simulations')
-    plt.plot(xx, yy2, color='red', linewidth=0, marker='o', markersize=4, 
-             alpha=0.4, linestyle='--', label = 'scaling relations')
+    plt.plot(xx, yy2, color='red', linewidth=3, marker='.', markersize=3, 
+             alpha=1, linestyle='-', label = 'scaling relations')
     plt.xscale("log")
     plt.yscale("log")
 
     plt.legend()
-    for i in range(0, len(zs)):
-        plt.plot([xx, xx], [yy1, yy2], color='grey', alpha=0.4, marker='o', markersize=0, linewidth=0.5)
+    #for i in range(0, len(zs)):
+    #    plt.plot([xx, xx], [yy1, yy2], color='grey', alpha=0.4, marker='o', markersize=0, linewidth=0.5)
     #plt.colorbar(label='Redshift')
