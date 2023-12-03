@@ -1,16 +1,20 @@
-def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn=10):
-    
+def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap_by_redshifts=False):
+   
     fig = plt.figure(figsize=(11.5,5.5))
+
+    if cmap_by_redshifts:
+         fig = plt.figure(figsize=(11.5,6.5))
     
-        
     plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
     
-    gs = GridSpec(2, 4, height_ratios=[1, 1], width_ratios=[5, 1, 4, 1], hspace = 0.2, wspace = 0.)
-    ax1 = fig.add_subplot(gs[:, 0])
+    gs = GridSpec(4, 4, height_ratios=[1, 1, 0.1, 0.1], width_ratios=[5, 1.5, 4, 1], hspace = 0.3, wspace = 0.)
+    ax1 = fig.add_subplot(gs[0:2, 0])
     ax2 = fig.add_subplot(gs[2])
     ax3 = fig.add_subplot(gs[6])
     ax4 = fig.add_subplot(gs[3])
     ax5 = fig.add_subplot(gs[7])
+    if cmap_by_redshifts:
+        ax6 = fig.add_subplot(gs[12:16])
 
     #plt.subplots_adjust()
     #gs.tight_layout(figure=fig)
@@ -22,8 +26,13 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     yy  = [a[1] for a in y_array]
     yye = [a[2] for a in y_array]
 
-    ax1.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
-                 capsize=3, color=clr, marker='o', markersize=3)
+    if not cmap_by_redshifts:
+        ax1.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
+                     capsize=3, color=clr, marker='o', markersize=3)
+    else:
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, yy, yye, redshifts_colour):
+            ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
+            ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
     ax1.plot([1, 9], [1, 9], color='black', linewidth=1)
 
@@ -36,9 +45,14 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
 
     #plt.subplot(222)
 
-    ax2.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
+    if not cmap_by_redshifts:
+        ax2.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
                  yerr=[a+b for a, b in zip(xxe, yye)], linewidth=0, elinewidth=1, 
                  capsize=3, color=clr, marker='o', markersize=3)
+    else:
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, [YY-XX for YY, XX in zip(yy, xx)], [a+b for a, b in zip(xxe, yye)], redshifts_colour):
+            ax2.plot(xxx, yyy, 'o', color=col, markersize=3)
+            ax2.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
     ax2.axhline(0, color='black', linewidth=1)
     ax2.set_ylabel(y_label_right_up, fontsize=11)
@@ -64,9 +78,14 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     
     y_p = [(YY-XX)/XX for YY, XX in zip(yy, xx)]
     y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
-    
-    ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
-    ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
+
+    if not cmap_by_redshifts:
+        ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
+        ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
+    else:
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_p, y_p_err, redshifts_colour):
+            ax3.plot(xxx, yyy, 'o', color=col, markersize=3)
+            ax3.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
                  
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
     #ax3.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
@@ -91,6 +110,9 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     xxxccc = np.linspace(-1,1,100)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
     ax5.plot(yyyccc, xxxccc, color='black')
+
+    if cmap_by_redshifts:
+        fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
 
     #plt.show()
     
@@ -132,8 +154,3 @@ def draw_84_panels(mode):
             temp_compare[cl_num] = [cl_T500, SP[0][:3]]
             lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
             average_ene[cl_num] = [SP[2]]
-        
-        
-        
-        
-    
