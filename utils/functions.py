@@ -18,7 +18,7 @@ def R500(MM500, zz):
     return rs
 
 
-def T_X(MM500, zz, mean_T=5, mean_M=3):
+def T_X(MM500, zz):
 
     ts = np.zeros(len(zz))
     
@@ -26,7 +26,7 @@ def T_X(MM500, zz, mean_T=5, mean_M=3):
     
     for i in range(0, len(MM500)):
     
-    	ts[i] = mean_T * (MM500[i]/mean_M/10**14*0.704)**(0.65) * E(zz[i])**(0.65) 
+    	ts[i] = 5 * (MM500[i]/2.95/10**14*0.704)**(0.65) * E(zz[i])**(0.65) 
     
     return ts
 
@@ -62,13 +62,12 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
 def draw_panel(xx, yy1, yy2):
 
-    plt.scatter(xx, yy1, c=zs, cmap='viridis', s=10, label = 'simulations')
-    plt.plot(xx, yy2, color='red', linewidth=3, marker='.', markersize=3, 
-             alpha=1, linestyle='-', label = 'scaling relations')
+    plt.scatter(xx, yy1, c=zs, cmap='viridis', s=20, label = 'Magneticum simulations')
+    plt.plot(xx, yy2, color='red', linewidth=2, marker='.', markersize=0, 
+             alpha=1, linestyle='-', label = 'Vikhlinin et al. (2009)')
     plt.xscale("log")
     plt.yscale("log")
 
-    plt.legend()
     #for i in range(0, len(zs)):
     #    plt.plot([xx, xx], [yy1, yy2], color='grey', alpha=0.4, marker='o', markersize=0, linewidth=0.5)
     #plt.colorbar(label='Redshift')

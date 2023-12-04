@@ -1,13 +1,13 @@
 def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap_by_redshifts=False):
    
-    fig = plt.figure(figsize=(11.5,5.5))
-
-    if cmap_by_redshifts:
-         fig = plt.figure(figsize=(11.5,6.5))
+    if not cmap_by_redshifts:   
+        fig = plt.figure(figsize=(11.5,5.5))
+    else:
+        fig = plt.figure(figsize=(11.5,6.5))
     
     plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
     
-    gs = GridSpec(4, 4, height_ratios=[1, 1, 0.1, 0.1], width_ratios=[5, 1.5, 4, 1], hspace = 0.3, wspace = 0.)
+    gs = GridSpec(4, 4, height_ratios=[1, 1, 0.05, 0.1], width_ratios=[5, 1.5, 4, 1], hspace = 0.3, wspace = 0.)
     ax1 = fig.add_subplot(gs[0:2, 0])
     ax2 = fig.add_subplot(gs[2])
     ax3 = fig.add_subplot(gs[6])
@@ -73,6 +73,10 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     xxxccc = np.linspace(-3,3,100)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean([YY-XX for YY, XX in zip(yy, xx)]), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
+    
+    ax2.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV")
+    ax2.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV")
+    ax2.legend(handlelength=0, frameon=False, fontsize=10)
 
     #plt.subplot(224)
     
@@ -110,6 +114,10 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     xxxccc = np.linspace(-1,1,100)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
     ax5.plot(yyyccc, xxxccc, color='black')
+    
+    ax3.plot([], [], label=f"$\mu = {np.mean(y_p):.2f}$")
+    ax3.plot([], [], label=f"$\sigma = {RMS:.2f}$")
+    ax3.legend(handlelength=0, frameon=False, fontsize=10)
 
     if cmap_by_redshifts:
         fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
