@@ -56,7 +56,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
 
     ax2.axhline(0, color='black', linewidth=1)
     ax2.set_ylabel(y_label_right_up, fontsize=11)
-    #ax2.set_ylim(-3, 3)
+    ax2.set_ylim(-3, 3)
     
     leftb, rightb = ax2.get_xlim()
     leftc, rightc = ax2.get_ylim()
@@ -76,7 +76,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     
     ax2.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV")
     ax2.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV")
-    ax2.legend(handlelength=0, frameon=False, fontsize=10)
+    ax2.legend(handlelength=0, frameon=False, fontsize=10, loc=4)
 
     #plt.subplot(224)
     
@@ -97,7 +97,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.axhline(0, color='black', linewidth=1)
     ax3.set_ylabel(y_label_right_down, fontsize=11)
     ax3.set_xlabel(x_label, fontsize=11)
-    #ax3.set_ylim(-0.8, 0.8)
+    ax3.set_ylim(-0.8, 0.8)
     
     ax3.set_xlim(leftb, rightb)
     leftd, rightd = ax3.get_ylim()
@@ -117,10 +117,12 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     
     ax3.plot([], [], label=f"$\mu = {np.mean(y_p):.2f}$")
     ax3.plot([], [], label=f"$\sigma = {RMS:.2f}$")
-    ax3.legend(handlelength=0, frameon=False, fontsize=10)
+    ax3.legend(handlelength=0, frameon=False, fontsize=10, loc=4)
 
     if cmap_by_redshifts:
         fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
+#        fig.colorbar(mappable=mapper_area, cax=ax6, orientation="horizontal",  ticks=[1,2,3,4,5, 6]).set_label("$A_{after \ fit} \ / \ A_{before \ fit}$ where A is constant in front of background model", fontsize=12)
+#        ax6.set_xticklabels([1,2,3,4,5,6])
 
     #plt.show()
     

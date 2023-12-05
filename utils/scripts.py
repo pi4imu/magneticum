@@ -340,6 +340,10 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     T_spec_left = mod(2).error[0]
     T_spec_right = mod(2).error[1]
     
+    if BACKGROUND:
+
+        area_from_fit = mod(6).values[0]
+    
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
 
@@ -399,31 +403,42 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
             #plt.show()  
         
     x.Xset.chatter = 10
-   
-    return (T_spec, T_spec_left, T_spec_right), luminosity, av_en
-    
+
+    if not BACKGROUND:
+        return (T_spec, T_spec_left, T_spec_right), luminosity, av_en
+    else:
+        return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit
+
 
 def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
 
     temp_usr1 = {}
     lumin_usr1 = {}
     aven_usr1 = {}
+    area_usr1 = {}
     
     for cl_num in tqdm(clusters.index[:]):
     
         mean_temp = 0
         mean_lum = 0
         mean_aven = 0
+        mean_area = 0
         
         cl_red = clusters.loc[cl_num]["z_true"]
         cl_T500 = clusters.loc[cl_num]["T500"]
         cl_lum = clusters.loc[cl_num]["Lx500"]
-                
+        
+        if bkg:
+            D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
+            R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
+            cl_area = np.pi*R_500_rescaled**2*3600
+           
         #print(" |", cl_num,": ", end="")
         
         temps = np.zeros(N_usr)
         lumins = np.zeros(N_usr)
         avens = np.zeros(N_usr)
+        areas = np.zeros(N_usr)
     
         for i in tqdm(range(N_usr), leave=False):
 	    
@@ -433,30 +448,37 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
             temps[i] = Ts[0][0]
             lumins[i] = Ts[1][0]
             avens[i] = Ts[2]
+            areas[i] = Ts[3]
 	    
             #print(i+1, end="")
 	    
         mean_temp = np.mean(temps)
         mean_lum = np.mean(lumins)
         mean_aven = np.mean(avens)
+        mean_area = np.mean(areas)
         
         err_temp = np.std(temps)
         err_lum = np.std(lumins)
         err_aven = np.std(avens)
+        err_area = np.std(areas)
 	    
         temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
         lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
         aven_usr1[cl_num] = [mean_aven, err_aven]
+        area_usr1[cl_num] = [cl_area, mean_area, err_area]
         
     if write_to_file:
 
         df1 = pd.DataFrame(temp_usr1.values())
         df2 = pd.DataFrame(lumin_usr1.values())
         df3 = pd.DataFrame(aven_usr1.values())
-        df_all = pd.concat([df1, df2, df3], axis=1)
+        df4 = pd.DataFrame(area_usr1.values())
+        
+        df_all = pd.concat([df1, df2, df3, df4], axis=1)
         df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
 	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
-	                  '$E_{av}$', '$\Delta E_{av}$']
+	                  '$E_{av}$', '$\Delta E_{av}$',
+	                  '$A_0$','$A_{fit}$', '$\Delta A_{fit}$']
         df_all.index = aven_usr1.keys()
         df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
         
