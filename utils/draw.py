@@ -30,7 +30,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
         ax1.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
                      capsize=3, color=clr, marker='o', markersize=3)
     else:
-        for xxx, ex, yyy, ey, col in zip(xx, xxe, yy, yye, redshifts_colour):
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, yy, yye, abund_colour):
             ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
@@ -50,13 +50,13 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
                  yerr=[a+b for a, b in zip(xxe, yye)], linewidth=0, elinewidth=1, 
                  capsize=3, color=clr, marker='o', markersize=3)
     else:
-        for xxx, ex, yyy, ey, col in zip(xx, xxe, [YY-XX for YY, XX in zip(yy, xx)], [a+b for a, b in zip(xxe, yye)], redshifts_colour):
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, [YY-XX for YY, XX in zip(yy, xx)], [a+b for a, b in zip(xxe, yye)], abund_colour):
             ax2.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax2.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
     ax2.axhline(0, color='black', linewidth=1)
     ax2.set_ylabel(y_label_right_up, fontsize=11)
-    ax2.set_ylim(-3, 3)
+    #ax2.set_ylim(-3, 3)
     
     leftb, rightb = ax2.get_xlim()
     leftc, rightc = ax2.get_ylim()
@@ -87,7 +87,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
         ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
         ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
     else:
-        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_p, y_p_err, redshifts_colour):
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_p, y_p_err, abund_colour):
             ax3.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax3.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
                  
@@ -97,7 +97,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.axhline(0, color='black', linewidth=1)
     ax3.set_ylabel(y_label_right_down, fontsize=11)
     ax3.set_xlabel(x_label, fontsize=11)
-    ax3.set_ylim(-0.8, 0.8)
+    #ax3.set_ylim(-0.8, 0.8)
     
     ax3.set_xlim(leftb, rightb)
     leftd, rightd = ax3.get_ylim()
@@ -120,7 +120,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.legend(handlelength=0, frameon=False, fontsize=10, loc=4)
 
     if cmap_by_redshifts:
-        fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
+ #       fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
+        fig.colorbar(mappable=mapper_abund, cax=ax6, orientation="horizontal").set_label("Abundance in units of 1 Solar", fontsize=12) 
 #        fig.colorbar(mappable=mapper_area, cax=ax6, orientation="horizontal",  ticks=[1,2,3,4,5, 6]).set_label("$A_{after \ fit} \ / \ A_{before \ fit}$ where A is constant in front of background model", fontsize=12)
 #        ax6.set_xticklabels([1,2,3,4,5,6])
 
