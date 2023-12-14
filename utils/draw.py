@@ -1,9 +1,12 @@
-def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap_by_redshifts=False):
+def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap=False):
    
-    if not cmap_by_redshifts:   
+    if not cmap:   
         fig = plt.figure(figsize=(11.5,5.5))
     else:
         fig = plt.figure(figsize=(11.5,6.5))
+        NORM = matplotlib.colors.Normalize(vmin=min(cmap), vmax=max(cmap), clip=True)
+        MAPPER = cm.ScalarMappable(norm=NORM, cmap='rainbow')
+        COLOUR = np.array([(MAPPER.to_rgba(v)) for v in redshifts])
     
     plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
     
@@ -13,7 +16,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3 = fig.add_subplot(gs[6])
     ax4 = fig.add_subplot(gs[3])
     ax5 = fig.add_subplot(gs[7])
-    if cmap_by_redshifts:
+    if cmap:
         ax6 = fig.add_subplot(gs[12:16])
 
     #plt.subplots_adjust()
@@ -26,11 +29,11 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     yy  = [a[1] for a in y_array]
     yye = [a[2] for a in y_array]
 
-    if not cmap_by_redshifts:
+    if not cmap:
         ax1.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
                      capsize=3, color=clr, marker='o', markersize=3)
     else:
-        for xxx, ex, yyy, ey, col in zip(xx, xxe, yy, yye, abund_colour):
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, yy, yye, COLOUR):
             ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
@@ -44,13 +47,15 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     #ax1.scatter(2.39539, 1.1103637527004389, color='red')
 
     #plt.subplot(222)
+    
+    y_d = [YY-XX for YY, XX in zip(yy, xx)]
+    y_d_err = [a+b for a, b in zip(xxe, yye)]
 
-    if not cmap_by_redshifts:
-        ax2.errorbar(xx, [YY-XX for YY, XX in zip(yy, xx)], xerr=xxe, 
-                 yerr=[a+b for a, b in zip(xxe, yye)], linewidth=0, elinewidth=1, 
-                 capsize=3, color=clr, marker='o', markersize=3)
+    if not cmap:
+        ax2.errorbar(xx, y_d, xerr=xxe, yerr=y_d_err, 
+                     linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
     else:
-        for xxx, ex, yyy, ey, col in zip(xx, xxe, [YY-XX for YY, XX in zip(yy, xx)], [a+b for a, b in zip(xxe, yye)], abund_colour):
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_d, y_d_err, COLOUR):
             ax2.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax2.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
@@ -61,7 +66,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     leftb, rightb = ax2.get_xlim()
     leftc, rightc = ax2.get_ylim()
         
-    ba, bi, _ = ax4.hist([YY-XX for YY, XX in zip(yy, xx)], bins=20, histtype='stepfilled', orientation="horizontal", color=clr, density=True)
+    ba, bi, _ = ax4.hist(y_d, bins=20, histtype='stepfilled', orientation="horizontal", color=clr, density=True)
     ax4.set_ylim((leftc, rightc))
     #ax4.set_xscale("log")
     ax4.set_yticks([],[])
@@ -69,25 +74,25 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax4.xaxis.set_ticks_position('none') 
     ax4.axhline(0, color='black', linewidth=1)
     
-    RMS = np.sqrt( sum([(el**2) for el in [YY-XX for YY, XX in zip(yy, xx)]])/len([YY-XX for YY, XX in zip(yy, xx)]) )  
+    RMS = np.sqrt( sum([(el**2) for el in y_d])/len(y_d) )  
     xxxccc = np.linspace(-3,3,100)
-    yyyccc = stats.norm.pdf(xxxccc, loc=np.mean([YY-XX for YY, XX in zip(yy, xx)]), scale=RMS)
+    yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
     ax2.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV")
     ax2.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV")
-    ax2.legend(handlelength=0, frameon=False, fontsize=10, loc=4)
+    ax2.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
 
     #plt.subplot(224)
     
     y_p = [(YY-XX)/XX for YY, XX in zip(yy, xx)]
     y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
 
-    if not cmap_by_redshifts:
+    if not cmap:
         ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
         ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
     else:
-        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_p, y_p_err, abund_colour):
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_p, y_p_err, COLOUR):
             ax3.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax3.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
                  
@@ -117,11 +122,11 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     
     ax3.plot([], [], label=f"$\mu = {np.mean(y_p):.2f}$")
     ax3.plot([], [], label=f"$\sigma = {RMS:.2f}$")
-    ax3.legend(handlelength=0, frameon=False, fontsize=10, loc=4)
+    ax3.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
 
-    if cmap_by_redshifts:
+    if cmap:
  #       fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
-        fig.colorbar(mappable=mapper_abund, cax=ax6, orientation="horizontal").set_label("Abundance in units of 1 Solar", fontsize=12) 
+        fig.colorbar(mappable=MAPPER, cax=ax6, orientation="horizontal").set_label("Abundance in units of 1 Solar", fontsize=12) 
 #        fig.colorbar(mappable=mapper_area, cax=ax6, orientation="horizontal",  ticks=[1,2,3,4,5, 6]).set_label("$A_{after \ fit} \ / \ A_{before \ fit}$ where A is constant in front of background model", fontsize=12)
 #        ax6.set_xticklabels([1,2,3,4,5,6])
 
