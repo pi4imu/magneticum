@@ -170,3 +170,112 @@ def draw_84_panels(mode):
             temp_compare[cl_num] = [cl_T500, SP[0][:3]]
             lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
             average_ene[cl_num] = [SP[2]]
+            
+           
+def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with_intervals=True, u4et_oshibok = False):
+    
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.2,
+                 elinewidth=1, capsize=2, color=clr, label=l4dots)
+                 
+    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.9)
+
+    #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
+    #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
+    
+    if u4et_oshibok:
+        popt, pcov = curve_fit(func, xs, ys, sigma=y_es, absolute_sigma=True, maxfev=5000)
+    else:
+        popt, pcov = curve_fit(func, xs, ys, maxfev=5000)
+    
+    if with_intervals:
+
+        perr = np.sqrt(np.diagonal(pcov))
+
+        pp = (1. + 0.95)/2
+        nstd = stats.norm.ppf(pp)
+
+        popt_d = (popt[0]-nstd*perr[0], popt[1]-nstd*perr[1])
+        popt_u = (popt[0]+nstd*perr[0], popt[1]+nstd*perr[1])
+
+        #popt_d = popt-nstd*perr
+        #popt_u = popt+nstd*perr
+    
+        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{E_{{av}}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
+    
+        plt.fill_between(lll, 
+                     [func(XX, *popt_u) for XX in lll], 
+                     [func(XX, *popt_d) for XX in lll], 
+                     interpolate=False, alpha=0.25, color=clr)    
+    else:
+        
+        lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{E_{{av}}}}^{{{popt[1]:.1f}}}$'
+    
+    plt.plot(lll, [func(XX, *popt) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)
+        
+    if with_scatter:
+    
+        ypyp = [(a-b)/b for a,b in zip(ys, [func(XX, *popt) for XX in xs])]
+    
+        RMSp = np.sqrt( sum([(el**2) for el in ypyp])/len(ypyp))
+    
+        plt.plot(lll, [func(XX, *popt)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=1, label=f'Scatter = {100*RMSp:.0f}%')
+        plt.plot(lll, [func(XX, *popt)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=1)
+    
+        if False:
+            jj=0
+            kk=0
+    
+            for ggg in ys:
+    
+                XCV = xs[ys.index(ggg)]
+                       
+                if ggg<=func(XCV, *popt)*(1-RMSp) or (ggg>=func(XCV, *popt)*(1+RMSp)):
+                    jj+=1
+                    plt.scatter(XCV, ggg, c='red')
+                
+                if ggg>=func(XCV, *popt)*(1-RMSp) and (ggg<=func(XCV, *popt)*(1+RMSp)):
+                    kk+=1
+                    plt.scatter(XCV, ggg, c='yellow')
+            
+            print(kk/84, jj/84, jj+kk)
+    
+    return None
+    
+    
+def calculate_scatter(xs, ys, plot=True):
+    
+    popt, pcov = curve_fit(func, xs, ys)
+    
+    ypyp = [(a-b)/b for a,b in zip(ys, [func(XX, *popt) for XX in xs])]
+    
+    RMSp = np.sqrt( sum([(el**2) for el in ypyp])/len(ypyp))
+        
+    if plot:
+        
+        plt.hist(ypyp, density=True, color='black', histtype='step', lw=2, bins=20)
+        
+        xxxccc = np.linspace(-0.2,0.2,100)
+        yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(ypyp), scale=RMSp)
+        plt.plot(xxxccc, yyyccc, color='red', lw=2)
+        
+        plt.axvline(np.mean(ypyp), ls='--', color='r', lw=2)
+        plt.axvline(RMSp, ymin=0, ymax=stats.norm.pdf(np.mean(ypyp)+RMSp, loc=np.mean(ypyp), scale=RMSp)/plt.gca().get_ylim()[1], ls='--', color='r', lw=2)
+        plt.axvline(-RMSp, ymin=0, ymax=stats.norm.pdf(np.mean(ypyp)+RMSp, loc=np.mean(ypyp), scale=RMSp)/plt.gca().get_ylim()[1], ls='--', color='r', lw=2)
+        plt.axhline(stats.norm.pdf(np.mean(ypyp)+RMSp, loc=np.mean(ypyp), scale=RMSp), 
+                    xmin=(np.mean(ypyp)-RMSp-plt.gca().get_xlim()[0])/(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0]), 
+                    xmax=(np.mean(ypyp)+RMSp-plt.gca().get_xlim()[0])/(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0]), 
+                    ls='--', color='r', lw=2)
+
+        plt.text(-0.2, 3.0, f"$1\sigma$ = {RMSp:.2f}", fontsize=12)
+        #plt.text(-1.15, 1.0, f"         $1\sigma \ / \ T_{{best-fit}}$ = \n{RMS:.2f} keV / {np.mean([func(XX, *popt1) for XX in xx]):.2f} keV = {RMS/np.mean([func(XX, *popt1) for XX in xx]):.2f}", fontsize=12)
+        
+        plt.xlabel("$(T_{500} - T_{best-fit})/T_{best-fit}$", fontsize=12)
+        plt.ylabel("Probability density", fontsize=12)
+        plt.show()
+    
+    return RMSp
+    
+    
+    
+    
+    
