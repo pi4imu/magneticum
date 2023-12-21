@@ -2,7 +2,7 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=True):
+def extract_photons_from_cluster(current_cluster_number, r, center_is_peak=True, draw=True):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
     # this is the reason for using cluster number as a counter
@@ -24,58 +24,86 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
     
     SLICE = t.to_pandas()        # for photons extraction
     SLICE1 = t.to_pandas()       # for drawing
+    SLICE2 = t.to_pandas()       # for center searching if it is not from table
     
     if r == 'Rvir':
         R = R_vir
 
     elif r == 'R500':
         R = R_500_rescaled
+        
+    if not center_is_peak:
     
-    SLICE["check"]=np.where((SLICE["RA"]-RA_c)**2+(SLICE["DEC"]-DEC_c)**2 <= R**2, True, False)
-     
-    df = SLICE[SLICE['check'] == True]
+        SLICE["check"]=np.where((SLICE["RA"]-RA_c)**2+(SLICE["DEC"]-DEC_c)**2 <= R**2, True, False)
+        df = SLICE[SLICE['check'] == True]
+        dddfff = df.drop("check", axis=1)
+        
+        cntr = (RA_c, DEC_c)
     
-    dddfff = df.drop("check", axis=1)
+    else:
+    
+        ang_res = 20
+        half_size = 1.5*R_500_rescaled
+        SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size), True, False)
+        whattodraw = SLICE2[SLICE2['what'] == True]
+        whattodraw = whattodraw.drop("what", axis=1)
+        nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*half_size*3600/ang_res))
+        whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))   
+        reeeversed = [a*ang_res/60/60 for a in whereee]   
+    
+        xeeec = RA_c - half_size + reeeversed[0]
+        yeeec = DEC_c - half_size + reeeversed[1]
+        
+        SLICE["check"]=np.where((SLICE["RA"]-xeeec)**2+(SLICE["DEC"]-yeeec)**2 <= R**2, True, False)
+        df = SLICE[SLICE['check'] == True]
+        dddfff = df.drop("check", axis=1)
+        
+        cntr = (xeeec, yeeec)
+        
     
     if draw:
     
         ang_res = 5
         
         half_size = 1.5*R_500_rescaled
-    
-        #plt.figure(figsize=(6,5))
-        if not draw_new:
-            plt.scatter(dddfff["RA"], dddfff["DEC"], c=dddfff["ENERGY"], cmap='viridis', s=0.001)
-        else:
-            SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-RA_c) < half_size) & (np.abs(SLICE1["DEC"]-DEC_c) < half_size), True, False)
-            whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
-            whattodraw = whattodraw.drop("whattodraw1", axis=1)
-            #plt.scatter(whattodraw["RA"], whattodraw["DEC"], c=whattodraw["ENERGY"], 
-            #cmap='viridis', s=0.001) #norm=matplotlib.colors.LogNorm())
-          #  whattodraw = whattodraw[whattodraw["ENERGY"]<7.0]   # changing upper energy limit
-          #  whattodraw = whattodraw[whattodraw["ENERGY"]>0.7]   # changing lower energy limit
-            nmhg, _, _, _ = plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
-                       bins=int(2*half_size*3600/ang_res),
-                       norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
-	    
-            whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))
-            reeeversed = [a*ang_res/60/60 for a in whereee]
             
-            xeeec = plt.gca().get_xlim() + reeeversed[0]
-            yeeec = plt.gca().get_ylim() + reeeversed[1]
+        SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-cntr[0]) < half_size) & (np.abs(SLICE1["DEC"]-cntr[1]) < half_size), True, False)
+        whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
+        whattodraw = whattodraw.drop("whattodraw1", axis=1)
+      #  whattodraw = whattodraw[whattodraw["ENERGY"]<7.0]   # changing upper energy limit
+      #  whattodraw = whattodraw[whattodraw["ENERGY"]>0.7]   # changing lower energy limit
+        nmhg, _, _, trtr = plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
+                                   bins=int(2*half_size*3600/ang_res),
+                                   norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
+             
+  #      whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))         
+  #      reeeversed = [a*ang_res/60/60 for a in whereee]
+  #      xeeec = plt.gca().get_xlim()[0] + reeeversed[0]
+  #      yeeec = plt.gca().get_ylim()[0] + reeeversed[1]
             
-            #print(xeeec[0])
-            #print(yeeec[0])
+        #print(xeeec[0])
+        #print(yeeec[0])
             
-            #plt.scatter(xeeec, yeeec, color='red')
+        plt.scatter(RA_c, DEC_c, color='magenta')
+        plt.scatter(cntr[0], cntr[1], color='red')
             
-        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
-        plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))
-        plt.xlim(RA_c-half_size, RA_c+half_size)
-        plt.ylim(DEC_c-half_size, DEC_c+half_size)
+        #plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
+        plt.gca().add_patch(plt.Circle(cntr, R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))
+        #plt.gca().add_patch(plt.Circle((xeeec, yeeec), R_500_rescaled, color='yellow', linestyle="--", lw=3, fill = False))
+        
+        plt.xlim(cntr[0]-half_size, cntr[0]+half_size)
+        plt.ylim(cntr[1]-half_size, cntr[1]+half_size)
+        
+        #plt.gca().set_aspect('equal', 'box')
+        
+        #print(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0])
+        #print(plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])
+        
+     #   plt.axline((cntr[0]-half_size, cntr[1]-half_size), (cntr[0]+half_size, cntr[1]+half_size), color='r', marker = 'o')
+        
         plt.xlabel("RA, deg")
         plt.ylabel("DEC, deg")
-        plt.colorbar(label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
+        plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
         plt.title('#'+str(current_cluster_number), fontsize=15)
         #plt.tight_layout()
         
@@ -85,8 +113,8 @@ def extract_photons_from_cluster(current_cluster_number, r, draw=True, draw_new=
         handles.extend([l2])
         plt.legend(handles=handles, loc=3)
         #plt.show()
-    
-    return dddfff.mul(1+ztrue)
+
+    return dddfff#.mul(1+ztrue)
     
     
 
@@ -103,7 +131,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     binning = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
     #binning = np.append(erosita_binning, [12.0])
     
-    list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, draw=False)
+    list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, center_is_peak=True, draw=False)
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
     R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi

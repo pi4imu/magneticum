@@ -191,7 +191,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with
 
         perr = np.sqrt(np.diagonal(pcov))
 
-        pp = (1. + 0.95)/2
+        pp = (1. + 0.68)/2
         nstd = stats.norm.ppf(pp)
 
         popt_d = (popt[0]-nstd*perr[0], popt[1]-nstd*perr[1])
@@ -220,8 +220,14 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with
     
         plt.plot(lll, [func(XX, *popt)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=1, label=f'Scatter = {100*RMSp:.0f}%')
         plt.plot(lll, [func(XX, *popt)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=1)
+        
+        ypyp1 = [(a-b)/b for a,b in zip(xs, [inv_func(YY, *popt) for YY in ys])]
+        
+        RMSp1 = np.sqrt( sum([(el**2) for el in ypyp1])/len(ypyp))
+        
+        print(RMSp1)
     
-        if False:
+        if True:
             jj=0
             kk=0
     
