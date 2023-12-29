@@ -1,4 +1,4 @@
-def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap=False):
+def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap=False, cmap_label="Don't forget to rename me!"):
    
     if not cmap:   
         fig = plt.figure(figsize=(11.5,5.5))
@@ -6,7 +6,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
         fig = plt.figure(figsize=(11.5,6.5))
         NORM = matplotlib.colors.Normalize(vmin=min(cmap), vmax=max(cmap), clip=True)
         MAPPER = cm.ScalarMappable(norm=NORM, cmap='rainbow')
-        COLOUR = np.array([(MAPPER.to_rgba(v)) for v in redshifts])
+        COLOUR = np.array([(MAPPER.to_rgba(v)) for v in cmap])
     
     plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
     
@@ -125,11 +125,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax3.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
 
     if cmap:
- #       fig.colorbar(mappable=mapper_red, cax=ax6, orientation="horizontal").set_label("Redshift")
-        fig.colorbar(mappable=MAPPER, cax=ax6, orientation="horizontal").set_label("Abundance in units of 1 Solar", fontsize=12) 
-#        fig.colorbar(mappable=mapper_area, cax=ax6, orientation="horizontal",  ticks=[1,2,3,4,5, 6]).set_label("$A_{after \ fit} \ / \ A_{before \ fit}$ where A is constant in front of background model", fontsize=12)
-#        ax6.set_xticklabels([1,2,3,4,5,6])
-
+        fig.colorbar(mappable=MAPPER, cax=ax6, orientation="horizontal").set_label(cmap_label, fontsize=12)
+        
     #plt.show()
     
     
@@ -145,11 +142,11 @@ def draw_84_panels(mode):
     plt.figure(figsize=((size)*7+6, 5*12+11))
     plt.tight_layout()
     
-    if mode!='IMAGE':
+    #if mode!='IMAGE':
     
-        temp_compare = {}
-        lumin_compare = {}
-        average_ene = {}
+        #temp_compare = {}
+        #lumin_compare = {}
+        #average_ene = {}
         
     for cl_num in clusters.index[:NNN]:
         
@@ -157,27 +154,27 @@ def draw_84_panels(mode):
         
         if mode=='IMAGE':
         
-            pho_list = extract_photons_from_cluster(cl_num, r = 'R500', draw=True)
+            pho_list = extract_photons_from_cluster(cl_num, r = 1, draw=True)
         
         else:
         
-            cl_T500 = clusters.loc[cl_num]["T500"]
-            cl_lum = clusters.loc[cl_num]["Lx500"]
+            #cl_T500 = clusters.loc[cl_num]["T500"]
+            #cl_lum = clusters.loc[cl_num]["Lx500"]
     
             SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=True, inside_radius="R500",
                                             Xplot=False, plot=True, draw_only=mode)
 
-            temp_compare[cl_num] = [cl_T500, SP[0][:3]]
-            lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
-            average_ene[cl_num] = [SP[2]]
+            #temp_compare[cl_num] = [cl_T500, SP[0][:3]]
+            #lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
+            #average_ene[cl_num] = [SP[2]]
             
            
-def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with_intervals=True, u4et_oshibok = False):
+def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=True, with_intervals=True, u4et_oshibok = False):
     
-    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.2,
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.15,
                  elinewidth=1, capsize=2, color=clr, label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.9)
+    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.15)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
@@ -200,7 +197,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
     
-        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{E_{{av}}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
+        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.1f} \pm {perr[1]:.1f}}}$'
     
         plt.fill_between(lll, 
                      [func(XX, *popt_u) for XX in lll], 
@@ -208,7 +205,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with
                      interpolate=False, alpha=0.25, color=clr)    
     else:
         
-        lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{E_{{av}}}}^{{{popt[1]:.1f}}}$'
+        lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.1f}}}$'
     
     plt.plot(lll, [func(XX, *popt) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)
         
@@ -218,16 +215,16 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, with_scatter=True, with
     
         RMSp = np.sqrt( sum([(el**2) for el in ypyp])/len(ypyp))
     
-        plt.plot(lll, [func(XX, *popt)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=1, label=f'Scatter = {100*RMSp:.0f}%')
-        plt.plot(lll, [func(XX, *popt)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=1)
+        plt.plot(lll, [func(XX, *popt)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp:.0f}%')
+        plt.plot(lll, [func(XX, *popt)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
         
         ypyp1 = [(a-b)/b for a,b in zip(xs, [inv_func(YY, *popt) for YY in ys])]
         
         RMSp1 = np.sqrt( sum([(el**2) for el in ypyp1])/len(ypyp))
         
-        print(RMSp1)
+        #print(RMSp1)
     
-        if True:
+        if False:
             jj=0
             kk=0
     
@@ -260,7 +257,7 @@ def calculate_scatter(xs, ys, plot=True):
         
         plt.hist(ypyp, density=True, color='black', histtype='step', lw=2, bins=20)
         
-        xxxccc = np.linspace(-0.2,0.2,100)
+        xxxccc = np.linspace(-0.4,0.4,100)
         yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(ypyp), scale=RMSp)
         plt.plot(xxxccc, yyyccc, color='red', lw=2)
         
@@ -272,7 +269,7 @@ def calculate_scatter(xs, ys, plot=True):
                     xmax=(np.mean(ypyp)+RMSp-plt.gca().get_xlim()[0])/(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0]), 
                     ls='--', color='r', lw=2)
 
-        plt.text(-0.2, 3.0, f"$1\sigma$ = {RMSp:.2f}", fontsize=12)
+        plt.text(-0.3, 3.0, f"$1\sigma$ = {RMSp:.2f}", fontsize=12)
         #plt.text(-1.15, 1.0, f"         $1\sigma \ / \ T_{{best-fit}}$ = \n{RMS:.2f} keV / {np.mean([func(XX, *popt1) for XX in xx]):.2f} keV = {RMS/np.mean([func(XX, *popt1) for XX in xx]):.2f}", fontsize=12)
         
         plt.xlabel("$(T_{500} - T_{best-fit})/T_{best-fit}$", fontsize=12)

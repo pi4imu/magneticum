@@ -2,7 +2,7 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True):
+def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=False):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
     # this is the reason for using cluster number as a counter
@@ -30,8 +30,9 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         R = R_vir
     elif r == 'R500':
         R = R_500_rescaled
+        print('OBSOLETE! Change R500 to numerical value!')
     else:
-        R = R * R_500_rescaled
+        R = r * R_500_rescaled
         
     if not centroid:
     
@@ -77,7 +78,9 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         whattodraw = whattodraw.drop("whattodraw1", axis=1)
         nmhg, _, _, trtr = plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
                                    bins=int(2*half_size*3600/ang_res),
-                                   norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
+                                   norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
+                                   range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
+                                                   (cntr[1]-half_size, cntr[1]+half_size)]))
         
   #      whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))         
   #      reeeversed = [a*ang_res/60/60 for a in whereee]
@@ -87,10 +90,10 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         #print(yeeec[0])
             
         plt.scatter(RA_c, DEC_c, color='magenta', label = 'Catalogue')
-        plt.scatter(cntr[0], cntr[1], color='red')
+        plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid')
             
         #plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
-        plt.gca().add_patch(plt.Circle(cntr, R_500_rescaled, color='orangered', linestyle="--", lw=3, fill = False))
+        plt.gca().add_patch(plt.Circle(cntr, R, color='orangered', linestyle="--", lw=3, fill = False))
         #plt.gca().add_patch(plt.Circle((xeeec, yeeec), R_500_rescaled, color='yellow', linestyle="--", lw=3, fill = False))
         
         plt.xlim(cntr[0]-half_size, cntr[0]+half_size)
@@ -99,7 +102,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         
         plt.xlabel("RA, deg")
         plt.ylabel("DEC, deg")
-        plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
+        plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", fraction=0.046, pad=0.04)
         plt.title('#'+str(current_cluster_number), fontsize=15)
         #plt.tight_layout()
         
@@ -110,11 +113,15 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         plt.legend(handles=handles, loc=3)
         #plt.show()
 
-    return dddfff.mul(1+ztrue)
-    
+    if redshifted_back:
+        return dddfff.mul(1+ztrue)
+    else:
+        return dddfff
     
 
-def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius="R500", Xplot=False, plot=True, draw_only=False, draw_and_save_atable_model=False):
+# returns Tspec, Lspec and Eav
+
+def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius=1, Xplot=False, plot=True, draw_only=False, draw_and_save_atable_model=False):
 
     x.Xset.chatter = 0
     
@@ -188,7 +195,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     
     if draw_and_save_atable_model:
     	
-    	
+        print("OBSOLETE. See database.")
         from xspec_table_models import XspecTableModelAdditive
         
         parameter = ('Number', [current_cluster_num], False, False)
@@ -221,7 +228,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         myModel_with_bkg = x.Model("myModel+const*"+bkg_model_name, setPars=params, sourceNum=1)
         myModel_with_bkg(2).values = 1           # norm for myModel
         myModel_with_bkg(2).frozen = True
-        myModel_with_bkg(3).values = np.pi*R_500_rescaled**2*3600 # area of cluster = factor before background
+        myModel_with_bkg(3).values = np.pi*(inside_radius*R_500_rescaled)**2*3600 # area of cluster = factor before background
     
     # plot initial model on the left panel
 
@@ -253,7 +260,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         
             plt.xlabel(x.Plot.labels()[0])
             plt.ylabel(x.Plot.labels()[1])
-            plt.title(x.Plot.labels()[2])
+            plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$')
                
     # fakeit for input model (how erosita sees photons)    
         
@@ -330,9 +337,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
         mod(1).frozen = True
         mod(3).frozen = True
         mod(3).values = 0.3
-        mod(4).values = f"{REDSHIFT}"
+        mod(4).values = 0 #f"{REDSHIFT}"  #because we already redhifted energies of photons
 
-        #mod(6).values = np.pi*R_500_rescaled**2/min2_to_deg2 # area of cluster = factor before background
+        #mod(6).values = np.pi*(inside_radius*R_500_rescaled)**2/min2_to_deg2 # area of cluster = factor before background
 
         for i in range(7, 24):
             mod(i).frozen = True
@@ -369,9 +376,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, i
     if BACKGROUND:
 
         area_from_fit = mod(6).values[0]
+        mod(6).values = 0     # to calculate luminosity just from model, excluding background
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
+    #luminosity = [0.]
 
     # average energy:
     
@@ -441,71 +450,81 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
     temp_usr1 = {}
     lumin_usr1 = {}
     aven_usr1 = {}
-    abund_usr1 = {}
+    a4th_usr1 = {}   # either abundance (if no bkg) or A_from_fit (if with bkg)
     
     for cl_num in tqdm(clusters.index[:]):
     
         mean_temp = 0
         mean_lum = 0
         mean_aven = 0
-        mean_abund = 0
+        mean_a4th = 0
         
         cl_red = clusters.loc[cl_num]["z_true"]
         cl_T500 = clusters.loc[cl_num]["T500"]
         cl_lum = clusters.loc[cl_num]["Lx500"]
         
-        #if bkg:
-        #    D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
-        #    R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
-        #    cl_area = np.pi*R_500_rescaled**2*3600
+        if bkg:
+            D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
+            R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
+            cl_area = np.pi*R_500_rescaled**2*3600
            
         #print(" |", cl_num,": ", end="")
         
         temps = np.zeros(N_usr)
         lumins = np.zeros(N_usr)
         avens = np.zeros(N_usr)
-        abunds = np.zeros(N_usr)
+        a4ths = np.zeros(N_usr)
     
         for i in tqdm(range(N_usr), leave=False):
 	    
-            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius="R500",
+            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1,
 	                                    Xplot=False, plot=False)
     
             temps[i] = Ts[0][0]
             lumins[i] = Ts[1][0]
             avens[i] = Ts[2]
-            abunds[i] = Ts[3]
+            a4ths[i] = Ts[3]
 	    
             #print(i+1, end="")
 	    
         mean_temp = np.mean(temps)
         mean_lum = np.mean(lumins)
         mean_aven = np.mean(avens)
-        mean_abund = np.mean(abunds)
+        mean_a4th = np.mean(a4ths)
         
         err_temp = np.std(temps)
         err_lum = np.std(lumins)
         err_aven = np.std(avens)
-        err_abund = np.std(abunds)
+        err_a4th = np.std(a4ths)
 	    
         temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
         lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
         aven_usr1[cl_num] = [mean_aven, err_aven]
-        abund_usr1[cl_num] = [mean_abund, err_abund]
+        if not bkg:
+             a4th_usr1[cl_num] = [mean_a4th, err_a4th]
+        else:
+             a4th_usr1[cl_num] = [cl_area, mean_a4th, err_a4th]
         
     if write_to_file:
 
         df1 = pd.DataFrame(temp_usr1.values())
         df2 = pd.DataFrame(lumin_usr1.values())
         df3 = pd.DataFrame(aven_usr1.values())
-        df4 = pd.DataFrame(abund_usr1.values())
+        df4 = pd.DataFrame(a4th_usr1.values())
         
         df_all = pd.concat([df1, df2, df3, df4], axis=1)
-        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
-	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
-	                  '$E_{av}$', '$\Delta E_{av}$',
-	                  '$Z$', '$\Delta Z$']
-	                  #'$A_0$','$A_{fit}$', '$\Delta A_{fit}$']
+        
+        if not bkg:
+             df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
+	                       '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
+	                       '$E_{av}$', '$\Delta E_{av}$',
+	                       '$Z$', '$\Delta Z$']
+        else:
+             df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
+	                       '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
+	                       '$E_{av}$', '$\Delta E_{av}$',
+	                       '$A_0$', '$A_{fit}$','$\Delta A_{fit}$']
+                  
         df_all.index = aven_usr1.keys()
         df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
         

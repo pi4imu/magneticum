@@ -62,7 +62,7 @@ def L_X_from_T(temp, abund, redshift, lumin_bol):
     
 def draw_panel(xx, yy1, yy2):
 
-    plt.scatter(xx, yy1, c=zs, cmap='viridis', s=20, label = 'Magneticum simulations')
+    plt.scatter(xx, yy1, c=zs, cmap='viridis', s=20, label = 'Magneticum')
     plt.plot(xx, yy2, color='red', linewidth=2, marker='.', markersize=0, 
              alpha=1, linestyle='-', label = 'Vikhlinin et al. (2009)')
     plt.xscale("log")
