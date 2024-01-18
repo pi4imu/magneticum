@@ -2,7 +2,7 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=False):
+def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=True):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
     # this is the reason for using cluster number as a counter
@@ -45,7 +45,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
     else:
     
         ang_res = 5
-        half_size = 1.5*R_500_rescaled
+        half_size = 3*R_500_rescaled
         
         SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size), True, False)
         whattodraw = SLICE2[SLICE2['what'] == True]
@@ -68,27 +68,61 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         df = SLICE[SLICE['check'] == True]
         dddfff = df.drop("check", axis=1)
            
+        whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))
+        reeeversed = [a*ang_res/60/60 for a in whereee]
+        #xeeec = plt.gca().get_xlim()[0] + reeeversed[0]
+        #yeeec = plt.gca().get_ylim()[0] + reeeversed[1]
+        #print(xeeec)
+        #print(yeeec)
+        #print(np.where(nmhg == max(nmhg.flatten())))
+        #print(max(nmhg.flatten()))
+        m = [int(a[0]) for a in np.where(nmhg == max(nmhg.flatten()))]
+                
+        m = [int(c_x), int(c_y)]
+       
+        print(len(nmhg))
+              
+        r_pixels_max = 80
+        r_degrees = r_pixels_max*ang_res/3600
+        
+        k0 = kruzhok(0, m, nmhg, r_pixels_max+1)
+               
+        brightness = [k0.sum()/np.count_nonzero(k0)]
+                
+        for rr in range(0, r_pixels_max):
+        
+            k1 = kruzhok(rr, m, nmhg, r_pixels_max+1)
+            k2 = kruzhok(rr+1, m, nmhg, r_pixels_max+1)
+            ring = k2-k1
+              
+            if np.count_nonzero(ring) != 0:
+                brightness.append(ring.sum()/np.count_nonzero(ring))
+            else:
+                brightness.append(0)
+           
+        print(brightness)
+        
     if draw:
     
-        ang_res = 5
-        half_size = 3*R_500_rescaled
+        #ang_res = 5
+        half_size_draw = 3*R_500_rescaled
             
-        SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-cntr[0]) < half_size) & (np.abs(SLICE1["DEC"]-cntr[1]) < half_size), True, False)
+        SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-cntr[0]) < half_size_draw) & (np.abs(SLICE1["DEC"]-cntr[1]) < half_size_draw), True, False)
         whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
         whattodraw = whattodraw.drop("whattodraw1", axis=1)
         nmhg, _, _, trtr = plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
-                                   bins=int(2*half_size*3600/ang_res),
+                                   bins=int(2*half_size_draw*3600/ang_res),
                                    norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
-                                   range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
-                                                   (cntr[1]-half_size, cntr[1]+half_size)]))
+                                   range=np.array([(cntr[0]-half_size_draw, cntr[0]+half_size_draw),
+                                                   (cntr[1]-half_size_draw, cntr[1]+half_size_draw)]))
         
-  #      whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))         
-  #      reeeversed = [a*ang_res/60/60 for a in whereee]
-  #      xeeec = plt.gca().get_xlim()[0] + reeeversed[0]
-  #      yeeec = plt.gca().get_ylim()[0] + reeeversed[1]
-        #print(xeeec[0])
-        #print(yeeec[0])
-            
+        #plt.scatter(xeeec, yeeec, color='dodgerblue', label = 'Max value')
+        
+        
+        m_x, m_y = RA_c - half_size + m[0]*ang_res/3600, DEC_c - half_size + m[1]*ang_res/3600
+        plt.gca().add_patch(plt.Circle((m_x, m_y), r_degrees, color='red', linestyle="-", lw=1, fill = False, label = 'Brightest'))
+        #plt.gca().add_patch(plt.Rectangle((m_x-r_degrees, m_y-r_degrees), 2*r_degrees, 2*r_degrees, color='red', linestyle="-", lw=1, fill = False, label = 'Brightest'))
+                    
         plt.scatter(RA_c, DEC_c, color='magenta', label = 'Catalogue')
         plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid')
             
@@ -96,8 +130,18 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         plt.gca().add_patch(plt.Circle(cntr, R, color='orangered', linestyle="--", lw=3, fill = False))
         #plt.gca().add_patch(plt.Circle((xeeec, yeeec), R_500_rescaled, color='yellow', linestyle="--", lw=3, fill = False))
         
-        plt.xlim(cntr[0]-half_size, cntr[0]+half_size)
-        plt.ylim(cntr[1]-half_size, cntr[1]+half_size)
+        #print(np.where(nmhg == max(nmhg.flatten())), nmhg[np.where(nmhg == max(nmhg.flatten()))])
+        #m = [int(a) for a in np.where(nmhg == max(nmhg.flatten()))]
+        #print(RA_c - half_size + m[0]*ang_res/3600, DEC_c - half_size + m[1]*ang_res/3600)
+        #print(m[0], m[1])
+        #plt.scatter(RA_c - half_size + m[1]*ang_res/3600, DEC_c - half_size + m[0]*ang_res/3600, color='dodgerblue', label = 'Max value')
+        #print(c_x, c_y)
+        #print(nmhg[int(c_y), int(c_x)])
+        #print(cntr[0], cntr[1])
+        
+        
+        plt.xlim(cntr[0]-half_size_draw, cntr[0]+half_size_draw)
+        plt.ylim(cntr[1]-half_size_draw, cntr[1]+half_size_draw)
         plt.gca().set_aspect('equal', 'box')
         
         plt.xlabel("RA, deg")
@@ -111,17 +155,56 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         l2 = Line2D([], [], label="$R_{500}$", color='orangered', linestyle='--', linewidth=3)
         handles.extend([l2])
         plt.legend(handles=handles, loc=3)
+        #plt.savefig("1.pdf", format='pdf')
         #plt.show()
-
+        
+        plt.show()
+        plt.plot(np.linspace(0, r_pixels_max+1, r_pixels_max+1), brightness)
+        plt.axvline(R_500_rescaled*3600/ang_res, ls='--', color='red')
+        plt.axvline(brightness.index(max(brightness))+1, ls='--', color='black')
+        
+        plt.show()
+        
+        porog, _, _ = plt.hist(brightness, bins = 50)
+        plt.show()
+        
+        print(sum(porog))
+        print(porog)
+        
+        sum_porog = 0
+        i=0
+        while sum_porog < 0.8 * sum(porog):
+            
+            sum_porog = sum_porog + porog[i]
+            i = i + 1
+        print(sum_porog, i)
+        
+            
     if redshifted_back:
         return dddfff.mul(1+ztrue)
     else:
         return dddfff
-    
+
+ 
+def kruzhok(r_pixels, mm, NMHG, d_pixels):
+
+    kusok = np.zeros((2*d_pixels+1, 2*d_pixels+1))
+        
+    for i in range(mm[0]-d_pixels, mm[0]+d_pixels+1):
+        for j in range(mm[1]-d_pixels, mm[1]+d_pixels+1):
+            kusok[i - (mm[0]-d_pixels)][j - (mm[1]-d_pixels)] = NMHG[i][j]
+        
+    Y, X = np.ogrid[(mm[1]-d_pixels):(mm[1]+d_pixels+1), (mm[0]-d_pixels):(mm[0]+d_pixels+1)]
+    dist_from_center = np.sqrt((X - mm[0])**2 + (Y-mm[1])**2)
+        
+    mask = dist_from_center <= r_pixels
+        
+    return mask*kusok
+
 
 # returns Tspec, Lspec and Eav
 
-def create_spectrum_and_fit_it(current_cluster_num, borders, BACKGROUND=False, inside_radius=1, Xplot=False, plot=True, draw_only=False, draw_and_save_atable_model=False):
+def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius=1, Xplot=False, plot=False, draw_only=False, draw_and_save_atable_model=False):
 
     x.Xset.chatter = 0
     
@@ -474,12 +557,21 @@ def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
         lumins = np.zeros(N_usr)
         avens = np.zeros(N_usr)
         a4ths = np.zeros(N_usr)
-    
-        for i in tqdm(range(N_usr), leave=False):
+
+        pool = multiprocessing.Pool(processes=6)
+   
+        #for i in tqdm(range(N_usr), leave=False):
 	    
-            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1,
-	                                    Xplot=False, plot=False)
+            # Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1,Xplot=False, plot=False)
     
+        TTT = pool.map(create_spectrum_and_fit_it, [cl_num]*N_usr)
+        
+        pool.close()
+          
+        for i in range(len(TTT)):
+        
+            Ts = TTT[i]    
+            
             temps[i] = Ts[0][0]
             lumins[i] = Ts[1][0]
             avens[i] = Ts[2]

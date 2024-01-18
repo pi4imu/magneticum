@@ -197,7 +197,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
     
-        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.1f} \pm {perr[1]:.1f}}}$'
+        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
     
         plt.fill_between(lll, 
                      [func(XX, *popt_u) for XX in lll], 
