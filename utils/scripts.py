@@ -2,7 +2,7 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=True):
+def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=True, delete_bright_points=True, brightness_profile=True):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
     # this is the reason for using cluster number as a counter
@@ -28,11 +28,14 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
     
     if r == 'Rvir':
         R = R_vir
+        print('Really?')
     elif r == 'R500':
         R = R_500_rescaled
         print('OBSOLETE! Change R500 to numerical value!')
     else:
         R = r * R_500_rescaled
+        
+    AREA = np.pi*R**2*3600   # min2
         
     if not centroid:
     
@@ -40,17 +43,21 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         df = SLICE[SLICE['check'] == True]
         dddfff = df.drop("check", axis=1)
         
-        cntr = (RA_c, DEC_c)
+        cntr = (RA_c, DEC_c) # for drawing
     
     else:
     
         ang_res = 5
         half_size = 3*R_500_rescaled
         
+        # making histogram without drawing
+                
         SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size), True, False)
         whattodraw = SLICE2[SLICE2['what'] == True]
         whattodraw = whattodraw.drop("what", axis=1)
         nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*half_size*3600/ang_res))
+                
+        # centroid position
         
         psum = sum(nmhg.flatten())
         c_x, c_y = 0, 0
@@ -60,126 +67,178 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
                 c_x = c_x + i*nmhg[i,j]/psum
                 c_y = c_y + j*nmhg[i,j]/psum
         
+        # position of centroid in units of pixels relative to the lower left border    
+        c = [int(c_x), int(c_y)]
+        
         c_x_1 = RA_c - half_size + c_x*ang_res/3600
         c_y_1 = DEC_c - half_size + c_y*ang_res/3600
         cntr = (c_x_1, c_y_1)
         
+        # taking photons from circle centered at centroid
+        
         SLICE["check"]=np.where((SLICE["RA"]-c_x_1)**2+(SLICE["DEC"]-c_y_1)**2 <= R**2, True, False)
         df = SLICE[SLICE['check'] == True]
         dddfff = df.drop("check", axis=1)
-           
-        whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))
-        reeeversed = [a*ang_res/60/60 for a in whereee]
+        
+        # searching for the coordinates of maximum value
+        #whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))
+        #reeeversed = [a*ang_res/60/60 for a in whereee]
         #xeeec = plt.gca().get_xlim()[0] + reeeversed[0]
         #yeeec = plt.gca().get_ylim()[0] + reeeversed[1]
         #print(xeeec)
         #print(yeeec)
         #print(np.where(nmhg == max(nmhg.flatten())))
         #print(max(nmhg.flatten()))
-        m = [int(a[0]) for a in np.where(nmhg == max(nmhg.flatten()))]
-                
-        m = [int(c_x), int(c_y)]
-       
-        print(len(nmhg))
-              
-        r_pixels_max = 80
-        r_degrees = r_pixels_max*ang_res/3600
-        
-        k0 = kruzhok(0, m, nmhg, r_pixels_max+1)
-               
-        brightness = [k0.sum()/np.count_nonzero(k0)]
-                
-        for rr in range(0, r_pixels_max):
-        
-            k1 = kruzhok(rr, m, nmhg, r_pixels_max+1)
-            k2 = kruzhok(rr+1, m, nmhg, r_pixels_max+1)
-            ring = k2-k1
-              
-            if np.count_nonzero(ring) != 0:
-                brightness.append(ring.sum()/np.count_nonzero(ring))
-            else:
-                brightness.append(0)
-           
-        print(brightness)
+        #m = [int(a[0]) for a in np.where(nmhg == max(nmhg.flatten()))]
         
     if draw:
     
         #ang_res = 5
-        half_size_draw = 3*R_500_rescaled
+        #half_size = 3*R_500_rescaled
             
-        SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-cntr[0]) < half_size_draw) & (np.abs(SLICE1["DEC"]-cntr[1]) < half_size_draw), True, False)
+        # drawing just 2d histogram    
+        
+        SLICE1["whattodraw1"] = np.where( (np.abs(SLICE1["RA"]-cntr[0]) < half_size) & (np.abs(SLICE1["DEC"]-cntr[1]) < half_size), True, False)
         whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
         whattodraw = whattodraw.drop("whattodraw1", axis=1)
-        nmhg, _, _, trtr = plt.hist2d(whattodraw["RA"], whattodraw["DEC"], 
-                                   bins=int(2*half_size_draw*3600/ang_res),
-                                   norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
-                                   range=np.array([(cntr[0]-half_size_draw, cntr[0]+half_size_draw),
-                                                   (cntr[1]-half_size_draw, cntr[1]+half_size_draw)]))
         
-        #plt.scatter(xeeec, yeeec, color='dodgerblue', label = 'Max value')
+        nmhg, _, _, trtr = plt.hist2d(whattodraw["RA"], whattodraw["DEC"],
+                                      bins=int(2*half_size*3600/ang_res),
+                                      #cmax = 2.93,
+                                      norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
+                                      range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
+                                                      (cntr[1]-half_size, cntr[1]+half_size)]))
         
+        nmhg1 = kruzhok(int(R*3600/ang_res), c, nmhg, int(R*3600/ang_res))[0]
         
-        m_x, m_y = RA_c - half_size + m[0]*ang_res/3600, DEC_c - half_size + m[1]*ang_res/3600
-        plt.gca().add_patch(plt.Circle((m_x, m_y), r_degrees, color='red', linestyle="-", lw=1, fill = False, label = 'Brightest'))
+        #nmhg = nmhg[nmhg < 2.93]
+               
+        # obsolete (it was needed for estimation of correct position of circles)
+        
+        #m_x, m_y = RA_c - half_size + c[0]*ang_res/3600, DEC_c - half_size + c[1]*ang_res/3600
+        #r_degrees = r_pixels_max*ang_res/3600
+        #plt.gca().add_patch(plt.Circle((m_x, m_y), r_degrees, color='red', linestyle="-", lw=1, fill = False, label = 'Brightest'))
         #plt.gca().add_patch(plt.Rectangle((m_x-r_degrees, m_y-r_degrees), 2*r_degrees, 2*r_degrees, color='red', linestyle="-", lw=1, fill = False, label = 'Brightest'))
                     
         plt.scatter(RA_c, DEC_c, color='magenta', label = 'Catalogue')
         plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid')
+        #plt.scatter(xeeec, yeeec, color='dodgerblue', label = 'Max value')        
             
         #plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle(cntr, R, color='orangered', linestyle="--", lw=3, fill = False))
         #plt.gca().add_patch(plt.Circle((xeeec, yeeec), R_500_rescaled, color='yellow', linestyle="--", lw=3, fill = False))
         
-        #print(np.where(nmhg == max(nmhg.flatten())), nmhg[np.where(nmhg == max(nmhg.flatten()))])
-        #m = [int(a) for a in np.where(nmhg == max(nmhg.flatten()))]
-        #print(RA_c - half_size + m[0]*ang_res/3600, DEC_c - half_size + m[1]*ang_res/3600)
-        #print(m[0], m[1])
-        #plt.scatter(RA_c - half_size + m[1]*ang_res/3600, DEC_c - half_size + m[0]*ang_res/3600, color='dodgerblue', label = 'Max value')
-        #print(c_x, c_y)
-        #print(nmhg[int(c_y), int(c_x)])
-        #print(cntr[0], cntr[1])
-        
-        
-        plt.xlim(cntr[0]-half_size_draw, cntr[0]+half_size_draw)
-        plt.ylim(cntr[1]-half_size_draw, cntr[1]+half_size_draw)
+        plt.xlim(cntr[0]-half_size, cntr[0]+half_size)
+        plt.ylim(cntr[1]-half_size, cntr[1]+half_size)
         plt.gca().set_aspect('equal', 'box')
         
         plt.xlabel("RA, deg")
         plt.ylabel("DEC, deg")
         plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", fraction=0.046, pad=0.04)
-        plt.title('#'+str(current_cluster_number), fontsize=15)
+        plt.title('#'+str(current_cluster_number)+'; '+f'{AREA:.1f}'+' min$^2$', fontsize=15)
         #plt.tight_layout()
         
         handles, labels = plt.gca().get_legend_handles_labels()
       #  l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
-        l2 = Line2D([], [], label="$R_{500}$", color='orangered', linestyle='--', linewidth=3)
+        l2 = Line2D([], [], label=str(r)+"$\cdot R_{500}$", color='orangered', linestyle='--', linewidth=3)
         handles.extend([l2])
         plt.legend(handles=handles, loc=3)
-        #plt.savefig("1.pdf", format='pdf')
         #plt.show()
         
-        plt.show()
-        plt.plot(np.linspace(0, r_pixels_max+1, r_pixels_max+1), brightness)
-        plt.axvline(R_500_rescaled*3600/ang_res, ls='--', color='red')
-        plt.axvline(brightness.index(max(brightness))+1, ls='--', color='black')
+        if delete_bright_points:
         
-        plt.show()
-        
-        porog, _, _ = plt.hist(brightness, bins = 50)
-        plt.show()
-        
-        print(sum(porog))
-        print(porog)
-        
-        sum_porog = 0
-        i=0
-        while sum_porog < 0.8 * sum(porog):
+            plt.show()
             
-            sum_porog = sum_porog + porog[i]
-            i = i + 1
-        print(sum_porog, i)
-        
+            beeens = np.geomspace(1,2000,100)
+            porog1, bb1, _ = plt.hist(nmhg1.flatten(), bins = beeens)
             
+            threshold = 0.9
+            #print(sum(porog), sum(porog)*0.9)
+            #print(porog, bb)        
+         
+            sum_porog1 = 0
+            i=0
+            while sum_porog1 <= threshold * sum(porog1):
+                sum_porog1 = sum_porog1 + porog1[i]
+                i = i + 1
+           #    print(i, sum_porog, bb[i])
+            threshold = (sum_porog1-porog1[i])/sum(porog1)        
+            brightness_max1 = bb1[i-1]
+            #print(brightness_max1)
+            plt.axvline(brightness_max1, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {brightness_max1:.2f}')
+            plt.xlabel(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
+            plt.yscale("log")
+            plt.xscale("log")
+            plt.legend()
+            #plt.show()
+            
+            
+
+        # here we obtain brightness profile inside R_500_rescaled
+               
+        if brightness_profile:
+        
+            r_pixels_max = int(R*3600/ang_res)
+               
+            #k0 = kruzhok(0, c, nmhg, r_pixels_max+1)
+            brightness = []#[k0[0].sum()/sum(k0[1].flatten())]
+                 
+            for rr in range(0, r_pixels_max+1):
+        
+                k1 = kruzhok(rr, c, nmhg, r_pixels_max+1)
+                k2 = kruzhok(rr+3, c, nmhg, r_pixels_max+1)
+                ring = k2[0]-k1[0]
+                
+                #print(k1)
+                #print((sum(k2[1].flatten())-sum(k1[1].flatten())))
+                
+                if np.count_nonzero(ring) != 0:
+                    brightness.append(ring.sum()/(sum(k2[1].flatten())-sum(k1[1].flatten())))
+                else:
+                    brightness.append(0)
+            
+            print(brightness)
+            
+            plt.show()
+            plt.figure(figsize=(11,5))
+            
+            plt.subplot(121)
+            porog, bb, _ = plt.hist(brightness, bins = 100)
+            plt.xlabel("Brightness in relative units")    
+            #print(sum(porog), sum(porog)*0.9)
+            #print(porog, bb)
+        
+            threshold = 0.9
+            
+            sum_porog = 0
+            i=0
+            while sum_porog <= threshold * sum(porog):
+            
+                sum_porog = sum_porog + porog[i]
+                i = i + 1
+                #print(i, sum_porog, bb[i])
+            threshold = (sum_porog-porog[i])/sum(porog)
+            brightness_max = bb[i-1]
+            #print(brightness_max)
+            plt.axvline(brightness_max, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {brightness_max:.2f}')
+            plt.xscale("log")
+            plt.legend()
+        
+            plt.subplot(122)
+            r500_pix = int(R_500_rescaled*3600/ang_res)                
+            plt.plot(np.linspace(0, r_pixels_max+1, r_pixels_max+1)/r500_pix, brightness)
+            #plt.axvline(r_pixels_max/r500_pix, ls='--', color='red')
+            plt.axvline((brightness.index(max(brightness))+1)/r500_pix, ls='--', color='black')
+            plt.xlabel("Radius in units of $R_{500}$")
+            plt.ylabel("Brightness in relative units")
+            plt.axhline(brightness_max, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {brightness_max:.2f}')
+            plt.legend()
+            plt.show()
+            
+            plt.imshow(nmhg, norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='lower')
+            plt.show()
+            plt.imshow(nmhg1, norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='lower')
+                        
     if redshifted_back:
         return dddfff.mul(1+ztrue)
     else:
@@ -199,7 +258,7 @@ def kruzhok(r_pixels, mm, NMHG, d_pixels):
         
     mask = dist_from_center <= r_pixels
         
-    return mask*kusok
+    return mask*kusok, mask
 
 
 # returns Tspec, Lspec and Eav
