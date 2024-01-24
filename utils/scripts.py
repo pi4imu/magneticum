@@ -2,7 +2,7 @@
 
 # returns list of photons inside chosen radius
 
-def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=True, delete_bright_points=True, brightness_profile=True):
+def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=True, redshifted_back=True, brightness_profile=False):
 
     # there are several cases of SAME ihal for DIFFERENT cluster numbers
     # this is the reason for using cluster number as a counter
@@ -79,7 +79,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         SLICE["check"]=np.where((SLICE["RA"]-c_x_1)**2+(SLICE["DEC"]-c_y_1)**2 <= R**2, True, False)
         df = SLICE[SLICE['check'] == True]
         dddfff = df.drop("check", axis=1)
-        
+
         # searching for the coordinates of maximum value
         #whereee = np.concatenate(np.where(nmhg == max(nmhg.flatten())))
         #reeeversed = [a*ang_res/60/60 for a in whereee]
@@ -104,14 +104,13 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         
         nmhg, _, _, trtr = plt.hist2d(whattodraw["RA"], whattodraw["DEC"],
                                       bins=int(2*half_size*3600/ang_res),
-                                      #cmax = 2.93,
                                       norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
                                       range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
                                                       (cntr[1]-half_size, cntr[1]+half_size)]))
         
         nmhg1 = kruzhok(int(R*3600/ang_res), c, nmhg, int(R*3600/ang_res))[0]
         
-        #nmhg = nmhg[nmhg < 2.93]
+        #print(max(nmhg1.flatten()))
                
         # obsolete (it was needed for estimation of correct position of circles)
         
@@ -122,7 +121,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
                     
         plt.scatter(RA_c, DEC_c, color='magenta', label = 'Catalogue')
         plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid')
-        #plt.scatter(xeeec, yeeec, color='dodgerblue', label = 'Max value')        
+        #plt.scatter(xeeec, yeeec, color='dodgerblue', label = 'Max value') 
             
         #plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle(cntr, R, color='orangered', linestyle="--", lw=3, fill = False))
@@ -143,36 +142,122 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
         l2 = Line2D([], [], label=str(r)+"$\cdot R_{500}$", color='orangered', linestyle='--', linewidth=3)
         handles.extend([l2])
         plt.legend(handles=handles, loc=3)
-        #plt.show()
+        plt.show()
         
-        if delete_bright_points:
+        if True:
         
-            plt.show()
+            plt.figure(figsize=(11,5))
+            plt.subplot(121)
+            plt.title("nmhg")
+            plt.imshow(np.rot90(nmhg), norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='upper')
+            plt.colorbar(fraction=0.046, pad=0.04)
+            plt.subplot(122)
+            plt.title("nmhg1, R500 is "+str(int(R*3600/ang_res))+" pixels")
+            plt.imshow(np.rot90(nmhg1), norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='upper')  
+            plt.colorbar(fraction=0.046, pad=0.04)
+            plt.show()      
+        
+            plt.figure(figsize=(11,5))
             
-            beeens = np.geomspace(1,2000,100)
-            porog1, bb1, _ = plt.hist(nmhg1.flatten(), bins = beeens)
-            
-            threshold = 0.9
-            #print(sum(porog), sum(porog)*0.9)
-            #print(porog, bb)        
-         
-            sum_porog1 = 0
-            i=0
-            while sum_porog1 <= threshold * sum(porog1):
-                sum_porog1 = sum_porog1 + porog1[i]
-                i = i + 1
-           #    print(i, sum_porog, bb[i])
-            threshold = (sum_porog1-porog1[i])/sum(porog1)        
-            brightness_max1 = bb1[i-1]
-            #print(brightness_max1)
-            plt.axvline(brightness_max1, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {brightness_max1:.2f}')
+            plt.subplot(121)
+            beeens = np.geomspace(1, np.max(nmhg1.flatten()), 50)
+            amount_in_bin, bin_borders, _ = plt.hist(nmhg1.flatten(), bins = beeens)
+            #amount_total = sum(amount_in_bin)
+            bin_centers = (bin_borders[:-1]+bin_borders[1:])/2
+            #print(amount_total, sum(amount_in_bin*bin_centers), sum(nmhg1.flatten()))            
             plt.xlabel(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
+            plt.ylabel("Amount of such bins")
             plt.yscale("log")
             plt.xscale("log")
+            plt.title("Flattened histogram for upper right image")
+            
+            plt.subplot(122)
+            plt.scatter(bin_centers, amount_in_bin*bin_centers)
+            plt.xlabel(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
+            plt.ylabel("Total number of photons ($x \cdot y$ for histogram on the left)")
+            plt.yscale("log")
+            plt.xscale("log")       
+            
+            threshold = 0.5
+            
+            plt.title(f"$y$-values are added up until their sum\nis right below {threshold*100:.0f} % cutoff")    
+            
+            #print(amount_in_bin, bin_centers)
+            
+            #print(sum(amount_in_bin*bin_centers), "*", str(threshold), "=", sum(amount_in_bin*bin_centers)*threshold)
+        
+            sum_amount, i = 0, 0
+            while sum_amount <= threshold * sum(amount_in_bin*bin_centers):
+                sum_amount = sum_amount + (amount_in_bin*bin_centers)[i]
+                i = i + 1
+           #    print(i, sum_porog, bb[i])
+            threshold = (sum_amount-(amount_in_bin*bin_centers)[i-1])/sum(amount_in_bin*bin_centers)        
+            number_cutoff = bin_centers[i-1]
+            
+            plt.axvline(number_cutoff, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {number_cutoff:.2f}')
             plt.legend()
-            #plt.show()
             
+            plt.subplot(121)
+            plt.axvline(number_cutoff, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {number_cutoff:.2f}')
+            plt.show()
             
+            filter_mask = nmhg <= number_cutoff
+            nmhg = nmhg*filter_mask
+            
+            print(len(nmhg1.flatten()[nmhg1.flatten() > number_cutoff]))
+            
+            filter_mask1 = nmhg1 <= number_cutoff
+            filter_mask2 = nmhg1 > 0
+            filter_mask = filter_mask1*filter_mask2
+            nmhg1 = nmhg1*filter_mask
+            
+            print(len(nmhg1.flatten()[nmhg1.flatten() == 0]))
+            
+            plt.figure(figsize=(11,5))
+            
+            plt.subplot(121)
+            plt.title("nmhg1 filtered, R500 is "+str(int(R*3600/ang_res))+" pixels")
+            plt.imshow(nmhg1, norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='upper')
+            plt.scatter(94, 107, color='cyan')
+            plt.colorbar(fraction=0.046, pad=0.04)
+            
+            plt.subplot(122)
+            plt.title("nmhg filtered")
+            plt.imshow(nmhg, norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='upper')
+            plt.colorbar(fraction=0.046, pad=0.04)
+            plt.show()
+                       
+            dddfff["RA_pix"] = (dddfff["RA"] - cntr[0] + R)*3600/ang_res
+            dddfff["DEC_pix"] = (dddfff["DEC"] - cntr[1] + R)*3600/ang_res
+            
+            plt.hist2d(dddfff["RA_pix"], dddfff["DEC_pix"],
+                      bins=int(2*half_size*3600/ang_res),
+                      norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1)) 
+            plt.show()
+            
+            #display(dddfff)
+            
+            #print(filter_mask[int(107), int(94)])
+            #print(filter_mask[21,38])
+            
+            dddfff["stay"] = filter_mask[dddfff["RA_pix"].astype(int), dddfff["DEC_pix"].astype(int)]
+            
+            display(dddfff)
+            
+            display(dddfff[dddfff["stay"] == False])
+            
+            dddfff = dddfff[dddfff["stay"] == True]
+            
+            #whattodraw = SLICE1[SLICE1['whattodraw1'] == True]
+            #whattodraw = whattodraw.drop("whattodraw1", axis=1)
+            
+            #SLICE["check"]=np.where((SLICE["RA"]-c_x_1)**2+(SLICE["DEC"]-c_y_1)**2 <= R**2, True, False)
+            #df = SLICE[SLICE['check'] == True]
+            #dddfff = df.drop("check", axis=1)
+            
+            plt.hist2d(dddfff["RA_pix"], dddfff["DEC_pix"],
+                                      bins=int(2*half_size*3600/ang_res),
+                                      norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))   
 
         # here we obtain brightness profile inside R_500_rescaled
                
@@ -197,9 +282,9 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
                 else:
                     brightness.append(0)
             
-            print(brightness)
+            #print(brightness)
             
-            plt.show()
+            
             plt.figure(figsize=(11,5))
             
             plt.subplot(121)
@@ -233,11 +318,6 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, draw=
             plt.ylabel("Brightness in relative units")
             plt.axhline(brightness_max, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {brightness_max:.2f}')
             plt.legend()
-            plt.show()
-            
-            plt.imshow(nmhg, norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='lower')
-            plt.show()
-            plt.imshow(nmhg1, norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='lower')
                         
     if redshifted_back:
         return dddfff.mul(1+ztrue)
