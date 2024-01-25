@@ -139,9 +139,8 @@ def draw_84_panels(mode):
     else:
         size = 5
 
-    plt.figure(figsize=((size)*7+6, 5*12+11))
+    plt.figure(figsize=((size)*7+6+2, 5*12+11))
     plt.tight_layout()
-    plt.subplot_adjust()
     
     #if mode!='IMAGE':
     
