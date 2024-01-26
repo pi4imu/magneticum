@@ -42,8 +42,14 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_xlabel(x_label, fontsize=11)
     ax1.set_ylabel(y_label_left, fontsize=11)
 
-    ax1.set_xlim(1., 7.3)
-    ax1.set_ylim(1., 7.3)
+    ax1.set_xlim(1.6, 7.3)
+    ax1.set_ylim(1.6, 7.3)
+    
+    ax1.set_xscale("log")
+    ax1.set_yscale("log")
+    
+    ax2.set_xscale("log")
+    ax3.set_xscale("log")
     #ax1.scatter(2.39539, 1.1103637527004389, color='red')
 
     #plt.subplot(222)

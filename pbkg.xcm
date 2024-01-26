@@ -1,0 +1,23 @@
+model atable{RRCS_DB/RRCS_DB.fits}
+# number of cluster
+19787
+# radius in units of R500
+1.0
+# normalization
+1
+fakeit nowrite none
+RRCS_DB/erosita.rmf
+RRCS_DB/erosita.arf
+y
+
+
+10000
+cpd /xw
+#pl mo lda
+#response 2:1 source.rmf
+#@bkg/erass_pbkg_model.xcm
+#sho mo
+data 2:1 bkg/erass_pbkg_model.pha
+RRCS_DB/erosita.rmf
+sho da
+pl lda

@@ -54,7 +54,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         
         # making histogram without drawing
                 
-        SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size/2) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size/2), True, False)
+        SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size), True, False)
         whattodraw = SLICE2[SLICE2['what'] == True]
         whattodraw = whattodraw.drop("what", axis=1)
         nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*half_size*3600/ang_res))
@@ -101,19 +101,23 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             c1 = np.array(c) #+ shift
             nmhg1 = kruzhok(int(R*3600/ang_res), c1, nmhg, int(R*3600/ang_res)+1)[0]
             
-            threshold = 0.7
+            threshold = 0.9
             
             beeens = np.geomspace(1, np.max(nmhg1.flatten()), 50)
             amount_in_bin, bin_borders = np.histogram(nmhg1.flatten(), bins = beeens)
-            bin_centers = (bin_borders[:-1]+bin_borders[1:])/2
+            bin_centers = [int(b) for b in bin_borders[:-1]]
+            #bin_centers = (bin_borders[:-1]+bin_borders[1:])/2
             
-            sum_amount, i = 0, 0
-            while sum_amount <= threshold * sum(amount_in_bin*bin_centers):
-                sum_amount = sum_amount + (amount_in_bin*bin_centers)[i]
-                #print(i, bin_centers[i], sum_amount/sum(amount_in_bin*bin_centers))
-                i = i + 1
-            threshold = (sum_amount-(amount_in_bin*bin_centers)[i-1])/sum(amount_in_bin*bin_centers)        
-            number_cutoff = bin_centers[i-1]
+            cumulative = [sum(amount_in_bin[:i]) for i in range(0, len(amount_in_bin))]
+            number_cutoff = bin_centers[np.argmin(np.abs(cumulative-cumulative[-1]*threshold))]
+            
+            #sum_amount, i = 0, 0
+            #while sum_amount <= threshold * sum(amount_in_bin*bin_centers):
+            #    sum_amount = sum_amount + (amount_in_bin*bin_centers)[i]
+            #    #print(i, bin_centers[i], sum_amount/sum(amount_in_bin*bin_centers))
+            #    i = i + 1
+            #threshold = (sum_amount-(amount_in_bin*bin_centers)[i-1])/sum(amount_in_bin*bin_centers)        
+            #number_cutoff = bin_centers[i-1]
                                    
             filter_mask1 = nmhg1 <= number_cutoff
             nmhg1 = nmhg1*filter_mask1
@@ -130,6 +134,13 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             dddfff = dddfff.drop("stay", axis=1) 
             dddfff = dddfff.drop("RA_pix", axis=1)
             dddfff = dddfff.drop("DEC_pix", axis=1)
+            
+            #plt.hist2d(dddfff["RA"], dddfff["DEC"],
+            #               bins=len(nmhg1),
+            #               norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
+            #plt.gca().set_aspect('equal', 'box')
+            #plt.colorbar(fraction=0.046, pad=0.04)
+            #plt.show()
                    
     if draw:
             
@@ -175,7 +186,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         plt.xlabel("RA, deg")
         plt.ylabel("DEC, deg")
         plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", fraction=0.046, pad=0.04)
-        plt.title('#'+str(current_cluster_number)+'; '+f'{AREA:.1f}'+' min$^2$', fontsize=15)
+        plt.title(f'#{current_cluster_number}: z={ztrue:.3f}, A={AREA:.1f} min$^2$', fontsize=15)
         #plt.tight_layout()
         
         handles, labels = plt.gca().get_legend_handles_labels()
@@ -196,7 +207,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             #k0 = kruzhok(0, c, nmhg, r_pixels_max+1)
             brightness = []#[k0[0].sum()/sum(k0[1].flatten())]
             
-            ring_width = 3
+            ring_width = 5
                  
             for rr in range(0, r_pixels_max+1):
         
@@ -240,37 +251,57 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             
             #threshold = 0.7       
         
-            plt.figure(figsize=(11,5))
+            plt.figure(figsize=(12,5))
+            plt.tight_layout()
             plt.subplot(121)
             beeens = np.geomspace(1, np.max(nmhg1.flatten()), 50)
             amount_in_bin, bin_borders, _ = plt.hist(nmhg1.flatten(), bins = beeens)
-            bin_centers = (bin_borders[:-1]+bin_borders[1:])/2          
+            bin_centers = [int(b) for b in bin_borders[:-1]]
+            #bin_centers = (bin_borders[:-1]+bin_borders[1:])/2          
             plt.xlabel(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
             plt.ylabel("Amount of such bins")
             plt.yscale("log")
             plt.xscale("log")
             plt.title("Flattened histogram for upper right image")
             plt.subplot(122)
-            plt.scatter(bin_centers, amount_in_bin*bin_centers)
+            cumulative = [sum(amount_in_bin[:i]) for i in range(0, len(amount_in_bin))] #amount_in_bin*bin_centers
+            plt.scatter(bin_centers, cumulative)
             plt.xlabel(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin")
-            plt.ylabel("Total number of photons ($x \cdot y$ for histogram on the left)")
+            #plt.ylabel("Total number of photons ($x \cdot y$ for histogram on the left)")
+            plt.ylabel("Cumulative distribution")
             plt.yscale("log")
             plt.xscale("log")         
-            plt.title(f"$y$-values are added up until their sum\nis right below {threshold*100:.0f} % cutoff")    
+            plt.title(f"$x$-values are added up until their sum\nis right below {threshold*100:.0f} % cutoff")    
  
-            sum_amount, i = 0, 0
-            while sum_amount <= threshold * sum(amount_in_bin*bin_centers):
-                sum_amount = sum_amount + (amount_in_bin*bin_centers)[i]
-                #print(i, bin_centers[i], sum_amount/sum(amount_in_bin*bin_centers))
-                i = i + 1
-            threshold = (sum_amount-(amount_in_bin*bin_centers)[i-1])/sum(amount_in_bin*bin_centers)        
-            number_cutoff = bin_centers[i-1]
+            plt.axhline(cumulative[-1], ls='--', color='red')
+            plt.axhline(cumulative[-1]*threshold, ls='--', color='red')
             
-            plt.axvline(number_cutoff, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {number_cutoff:.2f}')
-            plt.legend()
+            number_cutoff = bin_centers[np.argmin(np.abs(cumulative-cumulative[-1]*threshold))]
             
-            plt.subplot(121)
-            plt.axvline(number_cutoff, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {number_cutoff:.2f}')
+            plt.axvline(number_cutoff, ls='--', color='red')
+            
+            print(cumulative[-1])
+            
+            print(sum(amount_in_bin[:]))
+            
+            print(sum(amount_in_bin[:number_cutoff]))
+            print(sum(amount_in_bin[:number_cutoff+1]))
+            
+            print(sum(amount_in_bin[:number_cutoff])/sum(amount_in_bin[:]))
+ 
+            #sum_amount, i = 0, 0
+            #while sum_amount <= threshold * sum(amount_in_bin*bin_centers):
+            #    sum_amount = sum_amount + (amount_in_bin*bin_centers)[i]
+            #    #print(i, bin_centers[i], sum_amount/sum(amount_in_bin*bin_centers))
+            #    i = i + 1
+            #threshold = (sum_amount-(amount_in_bin*bin_centers)[i-1])/sum(amount_in_bin*bin_centers)        
+            #number_cutoff = bin_centers[i-1]
+            
+            #plt.axvline(number_cutoff, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {number_cutoff:.2f}')
+            #plt.legend()
+            
+            #plt.subplot(121)
+            #plt.axvline(number_cutoff, ls='--', color='red', label=f'{threshold*100:.2f} % cutoff\nat brightness = {number_cutoff:.2f}')
             plt.show()
             
             # making masks and applying them to images
@@ -355,7 +386,7 @@ def kruzhok(r_pixels, mm, NMHG, d_pixels):
 
 # returns Tspec, Lspec and Eav
 
-def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius=1, dbr=False, Xplot=False, plot=False, draw_only=False, draw_and_save_atable_model=False):
+def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius=1, dbr=True, Xplot=False, plot=False, draw_only=False, draw_and_save_atable_model=False):
 
     x.Xset.chatter = 0
     
@@ -452,7 +483,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     
     if BACKGROUND:
     
-        df4 = pd.read_csv("utils/sky_bkg_full_arcmin_05cxb.xcm", header=None)[0]
+        df4 = pd.read_csv("bkg/sky_bkg_full_arcmin_05cxb.xcm", header=None)[0]
         bkg_model_name = df4[0][6:]
         params={}
         for i in range(1,18):
@@ -559,7 +590,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         mod(1).frozen = True
         mod(3).frozen = True     # abundance
         mod(3).values = 0.3
-        mod(4).values = f"{REDSHIFT}"  # of cluster, not of photon list
+        mod(4).values = 0 # f"{REDSHIFT}"  # of cluster, not of photon list
 
         mod.show()
         
@@ -679,94 +710,116 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit
 
 
-def calculate_all_and_average_it(N_usr, bkg=False, write_to_file=False):
+def average_one_cluster(cl_num, N_usr, bkg=False):
 
-    temp_usr1 = {}
-    lumin_usr1 = {}
-    aven_usr1 = {}
-    a4th_usr1 = {}   # either abundance (if no bkg) or A_from_fit (if with bkg)
+    mean_temp = 0
+    mean_lum = 0
+    mean_aven = 0
+    mean_a4th = 0
+        
+    cl_red = clusters.loc[cl_num]["z_true"]
+    cl_T500 = clusters.loc[cl_num]["T500"]
+    cl_lum = clusters.loc[cl_num]["Lx500"]
+        
+    if bkg:
+        D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
+        R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
+        cl_area = np.pi*R_500_rescaled**2*3600
+           
+    #print(" |", cl_num,": ", end="")
+        
+    temps = np.zeros(N_usr)
+    lumins = np.zeros(N_usr)
+    avens = np.zeros(N_usr)
+    a4ths = np.zeros(N_usr)
+
+    for i in tqdm(range(N_usr), leave=False, desc=str(cl_num)):
+	    
+        Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1, dbr=True,
+	                                Xplot=False, plot=False)
     
-    pool = multiprocessing.Pool(processes=4)
+        temps[i] = Ts[0][0]
+        lumins[i] = Ts[1][0]
+        avens[i] = Ts[2]
+        a4ths[i] = Ts[3]
+	    
+        #print(i+1, end="")
+        
+    print(cl_num, "done")
+
+    mean_temp = np.mean(temps)
+    mean_lum = np.mean(lumins)
+    mean_aven = np.mean(avens)
+    mean_a4th = np.mean(a4ths)
+        
+    err_temp = np.std(temps)
+    err_lum = np.std(lumins)
+    err_aven = np.std(avens)
+    err_a4th = np.std(a4ths)
+	    
+    #temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
+    #lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
+    #aven_usr1[cl_num] = [mean_aven, err_aven]
+    #if not bkg:
+    #     a4th_usr1[cl_num] = [mean_a4th, err_a4th]
+    #else:
+    #     a4th_usr1[cl_num] = [cl_area, mean_a4th, err_a4th]
+
+    if not bkg:
+        return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [mean_a4th, err_a4th]
+    else:
+        return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [cl_area, mean_a4th, err_a4th]
+        
+    
+def calculate_all_and_average_it(N_USR, BACKGROUND, write_to_file):
+
+    #temp_usr1 = {}
+    #lumin_usr1 = {}
+    #aven_usr1 = {}
+    #a4th_usr1 = {}   # either abundance (if no bkg) or A_from_fit (if with bkg)
+    
+    df_all = pd.DataFrame()
+    
+    pool = multiprocessing.Pool(processes=6)
     
     #for cl_num in tqdm(clusters.index[:]):
+      
+    output = pool.starmap(average_one_cluster, list(zip(list(clusters.index[:]), [N_USR]*84)))
     
-    pool.map(..., clusters.index[:])
+        #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
+
+        #df1 = pd.DataFrame(temp_usr1.values())
+        #df2 = pd.DataFrame(lumin_usr1.values())
+        #df3 = pd.DataFrame(aven_usr1.values())
+        #df4 = pd.DataFrame(a4th_usr1.values())
+        
+        #df_all = pd.concat([df1, df2, df3, df4], axis=1)
     
-        mean_temp = 0
-        mean_lum = 0
-        mean_aven = 0
-        mean_a4th = 0
-        
-        cl_red = clusters.loc[cl_num]["z_true"]
-        cl_T500 = clusters.loc[cl_num]["T500"]
-        cl_lum = clusters.loc[cl_num]["Lx500"]
-        
-        if bkg:
-            D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
-            R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
-            cl_area = np.pi*R_500_rescaled**2*3600
-           
-        #print(" |", cl_num,": ", end="")
-        
-        temps = np.zeros(N_usr)
-        lumins = np.zeros(N_usr)
-        avens = np.zeros(N_usr)
-        a4ths = np.zeros(N_usr)
-
-        for i in tqdm(range(N_usr), leave=False):
-	    
-            Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1,
-	                                    Xplot=False, plot=False)
+    pool.close()
     
-            temps[i] = Ts[0][0]
-            lumins[i] = Ts[1][0]
-            avens[i] = Ts[2]
-            a4ths[i] = Ts[3]
-	    
-            #print(i+1, end="")
+    for o in output:
+        
+        df_add = pd.DataFrame(np.concatenate(o)).T        
+        df_all = pd.concat([df_all, df_add], axis=0)
 
-        mean_temp = np.mean(temps)
-        mean_lum = np.mean(lumins)
-        mean_aven = np.mean(avens)
-        mean_a4th = np.mean(a4ths)
+    df_all.index = [clusters.index[:]]
+      
+    if not BACKGROUND:
+        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
+	                   '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
+	                   '$E_{av}$', '$\Delta E_{av}$',
+	                   '$Z$', '$\Delta Z$']
+    else:
+        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
+	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
+	                  '$E_{av}$', '$\Delta E_{av}$',
+	                  '$A_0$', '$A_{fit}$','$\Delta A_{fit}$']
+	                 
+    display(df_all)                  
+    #df_all.index = aven_usr1.keys()
+    df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
         
-        err_temp = np.std(temps)
-        err_lum = np.std(lumins)
-        err_aven = np.std(avens)
-        err_a4th = np.std(a4ths)
-	    
-        temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
-        lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
-        aven_usr1[cl_num] = [mean_aven, err_aven]
-        if not bkg:
-             a4th_usr1[cl_num] = [mean_a4th, err_a4th]
-        else:
-             a4th_usr1[cl_num] = [cl_area, mean_a4th, err_a4th]
-        
-    if write_to_file:
-
-        df1 = pd.DataFrame(temp_usr1.values())
-        df2 = pd.DataFrame(lumin_usr1.values())
-        df3 = pd.DataFrame(aven_usr1.values())
-        df4 = pd.DataFrame(a4th_usr1.values())
-        
-        df_all = pd.concat([df1, df2, df3, df4], axis=1)
-        
-        if not bkg:
-             df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
-	                       '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
-	                       '$E_{av}$', '$\Delta E_{av}$',
-	                       '$Z$', '$\Delta Z$']
-        else:
-             df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
-	                       '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
-	                       '$E_{av}$', '$\Delta E_{av}$',
-	                       '$A_0$', '$A_{fit}$','$\Delta A_{fit}$']
-                  
-        df_all.index = aven_usr1.keys()
-        df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
-        
-    return temp_usr1, lumin_usr1, aven_usr1
+    return None # temp_usr1, lumin_usr1, aven_usr1
 
 
 

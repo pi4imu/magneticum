@@ -1,4 +1,4 @@
-model atable{RRCD_magneticum.fits}
+model atable{RRCD_DB.fits}
 # number of cluster
 19787
 # radius in units of R500
