@@ -57,7 +57,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         
         # making 2D histogram of size 2*half_size with center (RA_c, DEC_c) without drawing
                 
-        SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size), True, False)
+        SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < half_size/2) & (np.abs(SLICE2["DEC"]-DEC_c) < half_size/2), True, False)
         whattodraw = SLICE2[SLICE2['what'] == True]
         whattodraw = whattodraw.drop("what", axis=1)
         nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*half_size*3600/ang_res))
@@ -273,7 +273,10 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                
         SLICE1["todraw"] = np.where( (np.abs(SLICE1["RA"]-cntr[0]) < half_size) & (np.abs(SLICE1["DEC"]-cntr[1]) < half_size), True, False)
         SLICE1 = SLICE1[SLICE1['todraw'] == True]
-        SLICE1 = SLICE1.drop("todraw", axis=1)        
+        SLICE1 = SLICE1.drop("todraw", axis=1)
+        
+        #SLICE1 = SLICE1[SLICE1['ENERGY']>1.3]      
+        #№SLICE1 = SLICE1[SLICE1['ENERGY']<2.3]
         
         if delete_bright_regions:
                 
@@ -371,7 +374,6 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     # erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
   
     N_channels = 1024
-    
     #binning = np.linspace(0.1, 12.0, N_channels+1)
     binning = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
     #binning = np.append(erosita_binning, [12.0])
@@ -380,16 +382,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
     R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
+    AREA = np.pi*(inside_radius*R_500_rescaled)**2*3600   # min2
 
     # spectra from photons
     
     photons, energies_bins = np.histogram(list_of_photons["ENERGY"], bins = binning)
-    
     energies = [(a+b)/2 for a, b in zip(energies_bins[:-1], energies_bins[1:])]
-    dE = np.diff(energies_bins)
-    
-    model_input = [a/10000/1000 for a in photons]
-    
+    dE = np.diff(energies_bins)  
+    model_input = [a/10000/1000 for a in photons] 
     # 10000 (s) is exposition time and 1000 (cm2) is nominal area      
     
     if Xplot:
@@ -435,26 +435,26 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             
     # writing our model to FITS-file
     
-    if draw_and_save_atable_model:
+    #if draw_and_save_atable_model:
     	
-        print("OBSOLETE. See database.")
-        from xspec_table_models import XspecTableModelAdditive
+    #    print("OBSOLETE. See database.")
+    #    from xspec_table_models import XspecTableModelAdditive
         
-        parameter = ('Number', [current_cluster_num], False, False)
-        fits11 = XspecTableModelAdditive('model_atable_'+str(current_cluster_num)+'.fits', 'myAtableModel', np.array(energies), [parameter])
-        # [erg/s/cm2/keV]
-        atablemodel_input = [a*b*(1.6*10**(-9))/10000/1000/c for a, b, c in zip(photons, energies, np.diff(energies_bins))]
-        fits11.write(0, atablemodel_input, False) 
-        fits11.save()
+    #    parameter = ('Number', [current_cluster_num], False, False)
+    #    fits11 = XspecTableModelAdditive('model_atable_'+str(current_cluster_num)+'.fits', 'myAtableModel', np.array(energies), [parameter])
+    #    # [erg/s/cm2/keV]
+    #    atablemodel_input = [a*b*(1.6*10**(-9))/10000/1000/c for a, b, c in zip(photons, energies, np.diff(energies_bins))]
+    #    fits11.write(0, atablemodel_input, False) 
+    #    fits11.save()
         	
-        x.Model("atable{model_atable_"+str(current_cluster_num)+".fits}")
-        
-        if plot:
-            if draw_only==False:
-    	        plt.subplot(1,2,1)
-            x.Plot(model_scale)
-            xVals_atable = x.Plot.x()[1:]
-            modVals_atable = x.Plot.model()[1:]     
+    #    x.Model("atable{model_atable_"+str(current_cluster_num)+".fits}")
+    #    
+    #    if plot:
+    #        if draw_only==False:
+    #	        plt.subplot(1,2,1)
+    #        x.Plot(model_scale)
+    #        xVals_atable = x.Plot.x()[1:]
+    #        modVals_atable = x.Plot.model()[1:]     
     		    
     # defining the model with background included:
     
@@ -687,7 +687,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit
 
 
-def average_one_cluster(cl_num, N_usr, bkg=False):
+def average_one_cluster(cl_num, N_usr=50, bkg=False):
 
     mean_temp = 0
     mean_lum = 0
@@ -748,7 +748,7 @@ def average_one_cluster(cl_num, N_usr, bkg=False):
         return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [cl_area, mean_a4th, err_a4th]
         
     
-def calculate_all_and_average_it(N_USR, BACKGROUND, write_to_file):
+def calculate_all_and_average_it(BACKGROUND, write_to_file):
 
     #temp_usr1 = {}
     #lumin_usr1 = {}
@@ -757,11 +757,12 @@ def calculate_all_and_average_it(N_USR, BACKGROUND, write_to_file):
     
     df_all = pd.DataFrame()
     
-    pool = multiprocessing.Pool(processes=6)
+    #pool = multiprocessing.Pool(processes=6)
     
     #for cl_num in tqdm(clusters.index[:]):
       
-    output = pool.starmap(average_one_cluster, list(zip(list(clusters.index[:]), [N_USR]*84)))
+    with multiprocessing.Pool(processes=6) as pool:
+        output = list(tqdm(pool.imap_unordered(average_one_cluster, clusters.index[:]), leave=False, total=len(clusters)))
     
         #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
 

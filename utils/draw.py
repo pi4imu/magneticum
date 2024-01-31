@@ -8,7 +8,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
         MAPPER = cm.ScalarMappable(norm=NORM, cmap='rainbow')
         COLOUR = np.array([(MAPPER.to_rgba(v)) for v in cmap])
     
-    plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
+#    plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
     
     gs = GridSpec(4, 4, height_ratios=[1, 1, 0.05, 0.1], width_ratios=[5, 1.5, 4, 1], hspace = 0.3, wspace = 0.)
     ax1 = fig.add_subplot(gs[0:2, 0])
@@ -42,14 +42,19 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_xlabel(x_label, fontsize=11)
     ax1.set_ylabel(y_label_left, fontsize=11)
 
-    ax1.set_xlim(1.6, 7.3)
-    ax1.set_ylim(1.6, 7.3)
+    ax1.set_xlim(1.6, 7.)
+    ax1.set_ylim(1.6, 7.)
     
-    ax1.set_xscale("log")
-    ax1.set_yscale("log")
+    #ax1.set_xscale("log")
+    #ax1.set_yscale("log")  
+    #ax2.set_xscale("log")
+    #ax3.set_xscale("log")
     
-    ax2.set_xscale("log")
-    ax3.set_xscale("log")
+    ti = [2,3,4,5,6,7]
+    ax1.set_xticks(ti, ti)
+    ax1.set_yticks(ti, ti)
+    ax2.set_xticks(ti, ti)
+    ax3.set_xticks(ti, ti)
     #ax1.scatter(2.39539, 1.1103637527004389, color='red')
 
     #plt.subplot(222)
@@ -167,8 +172,8 @@ def draw_84_panels(mode):
             #cl_T500 = clusters.loc[cl_num]["T500"]
             #cl_lum = clusters.loc[cl_num]["Lx500"]
     
-            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=True, inside_radius="R500",
-                                            Xplot=False, plot=True, draw_only=mode)
+            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius="R500",
+                                            dbr=True, Xplot=False, plot=True, draw_only=mode)
 
             #temp_compare[cl_num] = [cl_T500, SP[0][:3]]
             #lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
