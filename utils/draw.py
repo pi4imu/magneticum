@@ -178,9 +178,18 @@ def draw_84_panels(mode):
             #temp_compare[cl_num] = [cl_T500, SP[0][:3]]
             #lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
             #average_ene[cl_num] = [SP[2]]
+
+def func(p, x):
+
+    a, b = p
+    return a * x**b
+
+
+def inv_func(y, a, b):
+    return (y/a)**(1/b)
             
            
-def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=True, with_intervals=True, u4et_oshibok = False):
+def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
     plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.15,
                  elinewidth=1, capsize=2, color=clr, label=l4dots)
@@ -189,15 +198,20 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
-    
-    if u4et_oshibok:
-        popt, pcov = curve_fit(func, xs, ys, sigma=y_es, absolute_sigma=True, maxfev=5000)
-    else:
-        popt, pcov = curve_fit(func, xs, ys, maxfev=5000)
-    
+     
+    #popt, pcov = curve_fit(func, xs, ys, maxfev=5000)
+
+    power = odr.Model(func)
+    mydata = odr.Data(xs, ys, wd = 1./(np.array(x_es)++0.00001), we = 1./(np.array(y_es)+0.00001))
+    myodr = odr.ODR(mydata, power, beta0=[0, 0])
+    output = myodr.run()
+    popt = output.beta
+    #print(popt)        
+
     if with_intervals:
 
-        perr = np.sqrt(np.diagonal(pcov))
+        perr = output.sd_beta # np.sqrt(np.diagonal(pcov))
+        #print(perr)  
 
         pp = (1. + 0.68)/2
         nstd = stats.norm.ppf(pp)
@@ -207,27 +221,27 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=
 
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
-    
+        
         lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
     
         plt.fill_between(lll, 
-                     [func(XX, *popt_u) for XX in lll], 
-                     [func(XX, *popt_d) for XX in lll], 
-                     interpolate=False, alpha=0.25, color=clr)    
+                         [func(popt_u, XX) for XX in lll], 
+                         [func(popt_d, XX) for XX in lll], 
+                         interpolate=False, alpha=0.25, color=clr)    
     else:
         
         lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.1f}}}$'
     
-    plt.plot(lll, [func(XX, *popt) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)
+    plt.plot(lll, [func(popt, XX) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)
         
     if with_scatter:
     
-        ypyp = [(a-b)/b for a,b in zip(ys, [func(XX, *popt) for XX in xs])]
+        ypyp = [(a-b)/b for a,b in zip(ys, [func(popt, XX) for XX in xs])]
     
         RMSp = np.sqrt( sum([(el**2) for el in ypyp])/len(ypyp))
     
-        plt.plot(lll, [func(XX, *popt)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp:.0f}%')
-        plt.plot(lll, [func(XX, *popt)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
+        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp:.0f}%')
+        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
         
         ypyp1 = [(a-b)/b for a,b in zip(xs, [inv_func(YY, *popt) for YY in ys])]
         
@@ -235,7 +249,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=
         
         #print(RMSp1)
     
-        if False:
+        if True:
             jj=0
             kk=0
     
@@ -243,11 +257,11 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=
     
                 XCV = xs[ys.index(ggg)]
                        
-                if ggg<=func(XCV, *popt)*(1-RMSp) or (ggg>=func(XCV, *popt)*(1+RMSp)):
+                if ggg<=func(popt, XCV)*(1-RMSp) or (ggg>=func(popt, XCV)*(1+RMSp)):
                     jj+=1
                     plt.scatter(XCV, ggg, c='red')
                 
-                if ggg>=func(XCV, *popt)*(1-RMSp) and (ggg<=func(XCV, *popt)*(1+RMSp)):
+                if ggg>=func(popt, XCV)*(1-RMSp) and (ggg<=func(popt, XCV)*(1+RMSp)):
                     kk+=1
                     plt.scatter(XCV, ggg, c='yellow')
             
@@ -258,15 +272,20 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_scatter=
     
 def calculate_scatter(xs, ys, plot=True):
     
-    popt, pcov = curve_fit(func, xs, ys)
-    
-    ypyp = [(a-b)/b for a,b in zip(ys, [func(XX, *popt) for XX in xs])]
+    #popt, pcov = curve_fit(func, xs, ys)
+    power = odr.Model(func)
+    mydata = odr.Data(xs, ys)#, wd = 1./(np.array(x_es)++0.00001), we = 1./(np.array(y_es)+0.00001))
+    myodr = odr.ODR(mydata, power, beta0=[0, 0])
+    output = myodr.run()
+    popt = output.beta
+            
+    ypyp = [(a-b)/b for a,b in zip(ys, [func(popt, XX) for XX in xs])]
     
     RMSp = np.sqrt( sum([(el**2) for el in ypyp])/len(ypyp))
         
     if plot:
         
-        plt.hist(ypyp, density=True, color='black', histtype='step', lw=2, bins=20)
+        plt.hist(ypyp, density=True, color='black', histtype='step', lw=2, bins=50)
         
         xxxccc = np.linspace(-0.4,0.4,100)
         yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(ypyp), scale=RMSp)

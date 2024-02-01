@@ -413,12 +413,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 flux[i] = 0
 
     myModelParInfo = (f"par1 Number {current_cluster_num} 1 1 1 1 0.001",)
-
     x.AllModels.addPyMod(myModel, myModelParInfo, 'add')
-    
     # dummy rsp for model in suitable form
     x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=N_channels)
-    
     mmmm = x.Model("myModel")
     
     if plot:
@@ -458,19 +455,25 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     		    
     # defining the model with background included:
     
+    check_bkg = False
+    
     if BACKGROUND:
     
         df4 = pd.read_csv("bkg/sky_bkg_full_arcmin_05cxb.xcm", header=None)[0]
         bkg_model_name = df4[0][6:]
-        params={}
+        params_ph={}
         for i in range(1,18):
-            params[i+3] = df4[i]
+            params_ph[i+3] = df4[i]
         
         x.AllModels.clear()
-        myModel_with_bkg = x.Model("myModel+const*"+bkg_model_name, setPars=params, sourceNum=1)
+        myModel_with_bkg = x.Model("myModel+const*("+bkg_model_name+")", setPars=params_ph, sourceNum=1)
         myModel_with_bkg(2).values = 1           # norm for myModel
         myModel_with_bkg(2).frozen = True
-        myModel_with_bkg(3).values = np.pi*(inside_radius*R_500_rescaled)**2*3600 # area of cluster = factor before background
+        myModel_with_bkg(3).values = AREA         # area of cluster = factor before background
+    
+        if check_bkg:
+            for i in range(1, 20+1):
+                print(i, myModel_with_bkg(i).values)
     
     # plot initial model on the left panel
 
@@ -481,10 +484,10 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             if draw_only==False:
                 plt.subplot(121)
 
-            plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model without background", linestyle = '-', linewidth=2)
+            plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model", linestyle = '-', linewidth=2)
             
-            if draw_and_save_atable_model:
-                plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')
+            #if draw_and_save_atable_model:
+            #    plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')
                 
            # plt.plot(energies, [a/10000/1000/b for a,b in zip(photons, dE)], color='magenta')
             
@@ -519,7 +522,48 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                      settings = fs, 
                    applyStats = True,
                    filePrefix = "",
-                      noWrite = True)
+                      noWrite = False)
+                      
+    # particle background
+    
+    if BACKGROUND:
+    
+        df5 = pd.read_csv("bkg/erass_pbkg_model.xcm", header=None)[0]
+        pbkg_model_name = df5[6][6:]
+        params_part = {}
+        for i in range(1, 17):
+            params_part[i+1] = df5[i+6]
+        x.AllModels.clear()
+        particle_bkg_model = x.Model("const*"+pbkg_model_name, setPars=params_part, sourceNum=1, modName='PBKG')
+        particle_bkg_model(1).values = AREA
+    
+        #x.Xset.chatter = 10
+        #x.AllModels.show()
+        #x.Xset.chatter = 0
+        
+        x.AllData.clear()
+
+        fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
+                                   arf = '', 
+                            background = '', 
+                              exposure = 10000, 
+                            correction = '', 
+                          backExposure = '', 
+                              fileName = 'pbkg.pha')
+        x.AllData.fakeit(nSpectra = 1, 
+                         settings = fs, 
+                       applyStats = True,
+                       filePrefix = "",
+                          noWrite = False)
+                      
+    x.AllData.clear()
+    s1 = x.Spectrum('fakeit.pha')
+    #s2 = x.Spectrum('pbkg.pha')
+    s3 = x.Spectrum('bkg/erass_pbkg_model.pha')
+    #x.AllData += s1
+    #x.AllData += s2
+    print(s1)
+    print(s3)
     
     # plotting fakeit data on the right panel (or without left panel, if plotting all data):
                       
@@ -531,15 +575,25 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 plt.subplot(122)
         
             x.Plot("ldata")        
-            
+
+            every = 1 # how much points to draw (doesn't affect fit)
+
+            #if not BACKGROUND:            
+                
             xVals = x.Plot.x()
             xErrors = x.Plot.xErr()
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
-        
-            every = 1 # how much points to draw (doesn't affect fit)
-
             plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "All data")
+                
+            if BACKGROUND:
+            
+                x.Plot.add = True
+                xVals = x.Plot.x(2)
+                xErrors = x.Plot.xErr(2)
+                yVals = x.Plot.y(2)
+                yErrors = x.Plot.yErr(2)
+                plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "All data")    
         
             plt.xscale('log')
             plt.yscale('log')
@@ -586,8 +640,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         for i in range(7, 24):
             mod(i).frozen = True
 
-        for i in range(len(params)):
-            mod(i+7).values = list(params.values())[i]
+        for i in range(len(params_ph)):
+            mod(i+7).values = list(params_ph.values())[i]
 
         mod.show()
     
@@ -616,7 +670,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     abund_from_fit = mod(3).values[0]
     
     if BACKGROUND:
-
+        
+        if check_bkg:
+            for i in range(1,24):
+                print(i, mod(i).values)
+                
         area_from_fit = mod(6).values[0]
         mod(6).values = 0     # to calculate luminosity just from model, excluding background
     
