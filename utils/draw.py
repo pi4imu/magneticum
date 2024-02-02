@@ -45,10 +45,10 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_xlim(1.6, 7.)
     ax1.set_ylim(1.6, 7.)
     
-    #ax1.set_xscale("log")
-    #ax1.set_yscale("log")  
-    #ax2.set_xscale("log")
-    #ax3.set_xscale("log")
+    ax1.set_xscale("log")
+    ax1.set_yscale("log")  
+    ax2.set_xscale("log")
+    ax3.set_xscale("log")
     
     ti = [2,3,4,5,6,7]
     ax1.set_xticks(ti, ti)
