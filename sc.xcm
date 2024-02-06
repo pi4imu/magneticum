@@ -1,2 +1,0 @@
-rm sum.pha
-mathpha fakeit.pha+erass_pbkg_model.pha R total.pha 10000 NULL 0 rmfile='../erosita/erosita_pirmf_v20210719.rmf'

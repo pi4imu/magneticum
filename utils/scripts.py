@@ -113,6 +113,10 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             c1 = np.array(c)  + shift
             nmhg1 = kruzhok(int(R*3600/ang_res), c1, nmhg, int(R*3600/ang_res)+1)[0]
             
+            #fltr = Tophat2DKernel(2)
+            fltr = Gaussian2DKernel(1)
+            nmhg1 = convolve(nmhg1, fltr)
+            
             if draw_additional:
                 
                 plt.show()
@@ -138,11 +142,12 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             
             beeens = np.geomspace(1, np.max(nmhg1.flatten()), 50)
             amount_in_bin, bin_borders = np.histogram(nmhg1.flatten(), bins = beeens)
-            bin_centers = [int(b) for b in bin_borders[:-1]]
-            #bin_centers = (bin_borders[:-1]+bin_borders[1:])/2
+            #bin_centers = [int(b) for b in bin_borders[:-1]]
+            bin_centers = (bin_borders[:-1]+bin_borders[1:])/2
+            #print(bin_centers)
             cumulative = [sum(amount_in_bin[:i]) for i in range(0, len(amount_in_bin))]
-            number_cutoff = bin_centers[np.argmin(np.abs(cumulative-cumulative[-1]*threshold)) - 1]
-            index_cutoff = bin_centers.index(number_cutoff)
+            number_cutoff = bin_centers[np.argmin(np.abs(cumulative-cumulative[-1]*threshold))]
+            index_cutoff = list(bin_centers).index(number_cutoff)
             threshold_new = sum(amount_in_bin[:index_cutoff]) / cumulative[-1]
             
             #sum_amount, i = 0, 0
@@ -300,6 +305,9 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                                       norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
                                       range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
                                                       (cntr[1]-half_size, cntr[1]+half_size)]))
+        #if delete_bright_regions:
+
+        plt.imshow(convolve(nmhg, Gaussian2DKernel(1)))
                               
         # obsolete (it was needed for estimation of correct position of circles)
         
@@ -455,7 +463,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     		    
     # defining the model with background included:
     
-    check_bkg = True
+    #check_bkg = False
     
     if BACKGROUND:
     
@@ -464,12 +472,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         params_ph={}
         for i in range(1,18):
             params_ph[i+3] = df4[i]
-        
         x.AllModels.clear()
         myModel_with_bkg = x.Model("myModel+const*("+bkg_model_name+")", setPars=params_ph, sourceNum=1)
-        myModel_with_bkg(2).values = 1           # norm for myModel
+        myModel_with_bkg(2).values = "1, -1.0"           # norm for myModel
         myModel_with_bkg(2).frozen = True
-        myModel_with_bkg(3).values = AREA         # area of cluster = factor before background
+        myModel_with_bkg(3).values = AREA        # area of cluster = factor before background
     
         #if check_bkg:
         #    x.Xset.chatter = 10
@@ -479,39 +486,29 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     # plot initial model on the left panel
 
     if plot:
-    
         if draw_only!='DATA':
-
             if draw_only==False:
                 plt.subplot(121)
-
             plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model", linestyle = '-', linewidth=2)
             
             #if draw_and_save_atable_model:
-            #    plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')
-                
+            #    plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')    
            # plt.plot(energies, [a/10000/1000/b for a,b in zip(photons, dE)], color='magenta')
             
             if BACKGROUND:
-        
                 x.Plot(model_scale)
                 xVals_with_bkg = x.Plot.x()[1:]
-                modVals_with_bkg = x.Plot.model()[1:]
-                
+                modVals_with_bkg = x.Plot.model()[1:]               
                 plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background photons", alpha=0.5)
-
             plt.xscale('log')
             plt.yscale('log')
-            #plt.legend()
-        
             plt.xlabel(x.Plot.labels()[0])
             plt.ylabel(x.Plot.labels()[1])
             plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$')
                
-    # fakeit for input model (how erosita sees photons)    
+    # fakeit for input model (how erosita sees photons) saved to fakeit.pha
         
     x.AllData.clear()
-
     fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                arf = '../erosita/tm1_arf_open_000101v02.fits', 
                         background = '', 
@@ -538,8 +535,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             params_part[i+1] = df5[i+6]
         x.AllModels.clear()
         particle_bkg_model = x.Model("const*("+pbkg_model_name+")", sourceNum=1) #setPars=params_part,
-        particle_bkg_model(1).values = AREA / 2536.69702148438
-       
+        particle_bkg_model(1).values = AREA # / 2536.69702148438
         for i in range(2, 18):
             particle_bkg_model(i).values = list(params_part.values())[i-2]
             particle_bkg_model(i).frozen = True              
@@ -555,15 +551,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     	            plt.subplot(1,2,1)
     	            x.Plot(model_scale)
     	            xVals_pbkg = x.Plot.x()[1:]
-    	            modVals_pbkg = x.Plot.model()[1:]
-    	            plt.plot(xVals_pbkg, modVals_pbkg, label="Model for pbkg", alpha=0.5)
+    	            modVals_pbkg = np.array(x.Plot.model()[1:])/2536.69702148438
+    	            plt.plot(xVals_pbkg, modVals_pbkg, label="Model for pbkg / AREASCAL", alpha=0.9)
         
         x.AllData.clear()
-
         fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                    arf = '', 
                             background = '', 
-                              exposure = 25000, 
+                              exposure = 10000, 
                             correction = '', 
                           backExposure = '', 
                               fileName = 'pbkg.pha')
@@ -572,34 +567,29 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                        applyStats = True,
                        filePrefix = "",
                           noWrite = False)
-    
-        x.AllData.clear()
         
-       # s1 = x.Spectrum("1:1 fakeit.pha")
-       # s2 = x.Spectrum("2:2 pbkg.pha")
-        
+        # clean all data and upload data for drawing only
+        x.AllData.clear()	        
         x.AllData("1:1 fakeit.pha 2:2 pbkg.pha")
         s1 = x.AllData(1)
-        s2 = x.AllData(2)                    
+        s2 = x.AllData(2)    
     
-    # plotting fakeit data on the right panel (or without left panel, if plotting all data):
-                      
+    # plotting fakeit data on the right panel (or without left panel, if plotting only data):
+    
+    every = 1 # how much points to draw (doesn't affect fit)                      
+    
     if plot:
-    
         if draw_only!='MODEL':
-        
             if draw_only==False:
                 plt.subplot(122)
-        
             x.Plot("ldata")        
-
-            every = 1 # how much points to draw (doesn't affect fit)          
-                
             xVals = x.Plot.x()
             xErrors = x.Plot.xErr()
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
-            plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "Photons + ph.bkg")
+            plt.errorbar(xVals[::every], yVals[::every], 
+                         yerr=yErrors[::every], xerr=xErrors[::every], 
+                         linewidth=0, elinewidth=1, label = "Photons + ph.bkg")
                 
             # draw particle background separately
             
@@ -610,45 +600,44 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 xErrors = x.Plot.xErr(2)
                 yVals = x.Plot.y(2)
                 yErrors = x.Plot.yErr(2)
-                plt.errorbar(xVals[::every], yVals[::every], yerr=yErrors[::every], xerr=xErrors[::every], linewidth=0, elinewidth=1, label = "Only p.bkg", color = 'darkviolet')    
+                plt.errorbar(xVals[::every], yVals[::every], 
+                             yerr=yErrors[::every], xerr=xErrors[::every], 
+                             linewidth=0, elinewidth=1, label = "Only p.bkg", color = 'darkviolet')    
         
             plt.xscale('log')
             plt.yscale('log')
-            plt.legend(loc=1) 
-            
-            #plt.axvline(0.7, ls=':', color='g')
-    
+            plt.legend(loc=1)   
             plt.xlabel(x.Plot.labels()[0])
             plt.ylabel(x.Plot.labels()[1])
             #plt.title(x.Plot.labels()[2])
         
-    # total spectrum
+    # total spectrum: photons + particles
     
     if BACKGROUND:
         
         os.system("rm total.pha")
         os.system("mathpha fakeit.pha+pbkg.pha R total.pha 10000 NULL 0")
-        #os.system("cls")
+        clear_output(wait=False)
+
+        x.AllData.clear()
+        x.AllData("1:1 total.pha 2:2 pbkg.pha")
+        s1 = x.AllData(1)
+        s2 = x.AllData(2)
         
-        #x.AllData.clear()
+        s1.response = "../erosita/erosita_pirmf_v20210719.rmf"
+        s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
+        s2.response = "../erosita/erosita_pirmf_v20210719.rmf"
         
-        #s3 = x.Spectrum('total.pha')
-        #s3.response = '../erosita/erosita_pirmf_v20210719.rmf'
+        #if check_bkg:
+        #    x.Xset.chatter = 10
+        #    x.AllData.show()
+        #    x.Xset.chatter = 0    
         
-        if check_bkg:
-            x.Xset.chatter = 10
-            x.AllData.show()
-            x.Xset.chatter = 0    
-         
-        #x.Xset.chatter = 10
-        #x.AllData.show()
-        #x.Xset.chatter = 0
+        # draw total spectrum
         
         if draw_only!='MODEL':
-        
             if draw_only==False:
                 plt.subplot(122)
-
             x.Plot("ldata")         
             xVals = x.Plot.x()
             xErrors = x.Plot.xErr()
@@ -656,15 +645,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             yErrors = x.Plot.yErr()
             plt.errorbar(xVals[::every], yVals[::every], 
                          yerr=yErrors[::every], xerr=xErrors[::every], 
-                         linewidth=0, elinewidth=1, label = "Total observed spectrum", color="green", alpha=0.5)
-    
+                         linewidth=0, elinewidth=1, label = "Total observed spectrum", color="green", alpha = 0.7)
     
     # energy band for fitting:
           
     x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")
-    #x.AllData.notice("all")
                      
-    # defining the model for fitting                    
+    # defining the model for fitting:                    
     
     x.AllModels.clear()
     
@@ -680,7 +667,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         mod.show()
         
     else:
-    
+        
         mod = x.Model('phabs*apec+const*'+bkg_model_name)
 
         mod(1).values = 0.01
@@ -698,10 +685,19 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         for i in range(len(params_ph)):
             mod(i+7).values = list(params_ph.values())[i]
         
-        if check_bkg:
-            x.Xset.chatter = 10
-            x.AllModels.show()
-            x.Xset.chatter = 0        
+        mod1 = x.AllModels(1)  # data group for model
+        mod2 = x.AllModels(2)  # data group for background    
+        mod2(5).values = "0, -1.0"   # normalization in apec = 0 
+        mod2(6).values = "0, -1.0"   # const before photon bkg = 0
+
+        s1.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
+        #s1.multiresponse[1].arf = "../erosita/tm1_arf_open_000101v02.fits"
+        s2.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
+        
+        #if check_bkg:
+        #    x.Xset.chatter = 10
+        #    x.AllModels.show()
+        #    x.Xset.chatter = 0        
 
         #x.Xset.chatter = 10        
         #mod.show()
@@ -709,18 +705,19 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
         # particle background
         
-        mod_pbkg = x.Model('const*('+pbkg_model_name+')')        
-        
+        mod_pbkg = x.Model('const*('+pbkg_model_name+')', 'PBKG', 2)        
+        mod_pbkg(1).values = AREA
+         
         for i in range(2, 18):
+            mod_pbkg(i).frozen = True
             mod_pbkg(i).values = list(params_part.values())[i-2]
             mod_pbkg(i).frozen = True
-                    
-        if check_bkg:
-            x.Xset.chatter = 10
-            x.AllModels.show()
-            x.Xset.chatter = 0        
-  
-    
+      
+        #if check_bkg:
+        #    x.Xset.chatter = 10
+        #    x.AllModels.show()
+        #    x.Xset.chatter = 0        
+        
     x.Fit.renorm('auto')
     x.Fit.nIterations = 100
     x.Fit.query = 'yes'
@@ -746,24 +743,18 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     abund_from_fit = mod(3).values[0]
     
     if BACKGROUND:
-        
-        if check_bkg:
-            for i in range(1,24):
-                print(i, mod(i).values)
-                
+               
         area_from_fit = mod(6).values[0]
-        #mod(6).values = 0     # to calculate luminosity just from model, excluding background
+        mod(6).values = 0     # to calculate luminosity just from model, excluding background
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
-    #luminosity = [0.]
 
     # average energy:
     
     s_i = x.AllData(1).values
     ens = x.AllData(1).energies
     E_i = [(e[0]+e[1])/2 for e in ens]
-    
     av_en = np.dot(E_i, s_i)/np.sum(s_i)
     
     stats_for_header = f" ($stat/dof=$ {x.Fit.statistic/x.Fit.dof:.3f})"
@@ -771,49 +762,48 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     # plotting best-fit model at data panel:
     
     if plot:
-
-        if draw_only!='MODEL':
-            
+        if draw_only!='MODEL':        
             if draw_only==False:
                 plt.subplot(122)           
-    
             plt.axvline(borders[0], linestyle = '--', color='black')
-            plt.axvline(borders[1], linestyle = '--', color='black')
-    
+            plt.axvline(borders[1], linestyle = '--', color='black')    
             x.Plot("ldata")
-
+            x.Plot.add = True #!!!!
             xVals = x.Plot.x()
             xErrors = x.Plot.xErr()
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
             modVals = x.Plot.model()
-
             plt.errorbar(xVals[::every], yVals[::every], 
                          yerr=yErrors[::every], xerr=xErrors[::every], 
-                         linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=0.3)
+                         linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
             plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
-            plt.legend(loc=3, framealpha=1)
             
+            if BACKGROUND:
+            
+                xVals = x.Plot.x(2)
+                xErrors = x.Plot.xErr(2)
+                yVals = x.Plot.y(2)
+                yErrors = x.Plot.yErr(2)
+                modVals = x.Plot.model(2)
+                plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
+                   
+            plt.legend(loc=3, framealpha=1)           
             XT = [0.1, 1, 10]
-            plt.xticks=(XT, XT)
-            
+            plt.gca().set_xticks(ticks=XT, labels=XT)   
             plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=15)
-        
+            
         # plotting best-fit model on left panel:
 
         if draw_only!='DATA':
-        
             if draw_only==False:
                 plt.subplot(121)
-            
             x.Plot(model_scale)
             xVals = x.Plot.x()
             modVals = x.Plot.model()
-
             plt.plot(xVals, modVals, label="Best-fit model"+stats_for_header, color='red')
-            plt.legend(loc=3)
-            plt.xticks=(XT, XT)
-                        
+            plt.legend(loc=1)
+            plt.gca().set_xticks(ticks=XT, labels=XT)       
             plt.axvline(borders[0], linestyle = '--', color='black')
             plt.axvline(borders[1], linestyle = '--', color='black')
         
