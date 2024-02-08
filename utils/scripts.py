@@ -226,12 +226,13 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                            norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1))
                 plt.gca().set_aspect('equal', 'box')
                 plt.colorbar(fraction=0.046, pad=0.04)
-                                
-                # here we obtain brightness profile inside R_500_rescaled
-                
+                plt.title('nmhg1 but in RA/DEC')
+                                                
             dddfff = dddfff.drop("stay", axis=1) 
             dddfff = dddfff.drop("RA_pix", axis=1)
             dddfff = dddfff.drop("DEC_pix", axis=1)            
+               
+            # here we obtain brightness profile inside R_500_rescaled               
                
             if False:
             
@@ -305,10 +306,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                                       norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
                                       range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
                                                       (cntr[1]-half_size, cntr[1]+half_size)]))
-        #if delete_bright_regions:
-
-        plt.imshow(convolve(nmhg, Gaussian2DKernel(1)))
-                              
+        
         # obsolete (it was needed for estimation of correct position of circles)
         
         #m_x, m_y = RA_c - half_size + c[0]*ang_res/3600, DEC_c - half_size + c[1]*ang_res/3600
@@ -372,6 +370,12 @@ def kruzhok(r_pixels, mm, NMHG, d_pixels):
     return mask*kusok, mask
 
 
+def check_bkg():
+    x.Xset.chatter = 10
+    x.AllModels.show()
+    x.Xset.chatter = 0
+    return None    
+        
 # returns Tspec, Lspec and Eav
 
 def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius=1, dbr=True, Xplot=False, plot=False, draw_only=False, draw_and_save_atable_model=False):
@@ -460,11 +464,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     #        x.Plot(model_scale)
     #        xVals_atable = x.Plot.x()[1:]
     #        modVals_atable = x.Plot.model()[1:]     
-    		    
+    		        
     # defining the model with background included:
-    
-    #check_bkg = False
-    
+        
     if BACKGROUND:
     
         df4 = pd.read_csv("bkg/sky_bkg_full_arcmin_05cxb.xcm", header=None)[0]
@@ -478,10 +480,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         myModel_with_bkg(2).frozen = True
         myModel_with_bkg(3).values = AREA        # area of cluster = factor before background
     
-        #if check_bkg:
-        #    x.Xset.chatter = 10
-        #    x.AllModels.show()
-        #    x.Xset.chatter = 0
+        #check_bkg()
     
     # plot initial model on the left panel
 
@@ -506,7 +505,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.ylabel(x.Plot.labels()[1])
             plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$')
                
-    # fakeit for input model (how erosita sees photons) saved to fakeit.pha
+    # fakeit for input model (how erosita sees photons) saved to name1
+    
+    identificator = f'_{current_cluster_num}_{getpid()}'
+    #print(multiprocessing.current_process())
+    #print(multiprocessing.Process()._identity[0])
+    name1 = 'fakeit'+identificator+'.pha'
+    name2 = 'pbkg'+identificator+'.pha'
+    name3 = 'total'+identificator+'.pha'
         
     x.AllData.clear()
     fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
@@ -515,7 +521,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                           exposure = 10000, 
                         correction = '', 
                       backExposure = '', 
-                          fileName = 'fakeit.pha')
+                          fileName = name1)
     x.AllData.fakeit(nSpectra = 1, 
                      settings = fs, 
                    applyStats = True,
@@ -540,10 +546,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             particle_bkg_model(i).values = list(params_part.values())[i-2]
             particle_bkg_model(i).frozen = True              
         
-        #if check_bkg:
-        #    x.Xset.chatter = 10
-        #    x.AllModels.show()
-        #    x.Xset.chatter = 0
+        #check_bkg()
 
         if plot:
             if draw_only!='DATA':
@@ -561,7 +564,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                               exposure = 10000, 
                             correction = '', 
                           backExposure = '', 
-                              fileName = 'pbkg.pha')
+                              fileName = name2)
         x.AllData.fakeit(nSpectra = 1, 
                          settings = fs, 
                        applyStats = True,
@@ -570,7 +573,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
         # clean all data and upload data for drawing only
         x.AllData.clear()	        
-        x.AllData("1:1 fakeit.pha 2:2 pbkg.pha")
+        x.AllData(f"1:1 {name1} 2:2 {name2}")
         s1 = x.AllData(1)
         s2 = x.AllData(2)    
     
@@ -615,12 +618,12 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     
     if BACKGROUND:
         
-        os.system("rm total.pha")
-        os.system("mathpha fakeit.pha+pbkg.pha R total.pha 10000 NULL 0")
-        clear_output(wait=False)
+        #os.system(f"rm {name3}")
+        os.system(f"mathpha {name1}+{name2} R {name3} 10000 NULL 0 chatter=0")
+        #clear_output(wait=False)
 
         x.AllData.clear()
-        x.AllData("1:1 total.pha 2:2 pbkg.pha")
+        x.AllData(f"1:1 {name3} 2:2 {name2}")
         s1 = x.AllData(1)
         s2 = x.AllData(2)
         
@@ -628,10 +631,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
         s2.response = "../erosita/erosita_pirmf_v20210719.rmf"
         
-        #if check_bkg:
-        #    x.Xset.chatter = 10
-        #    x.AllData.show()
-        #    x.Xset.chatter = 0    
+        #check_bkg()   
         
         # draw total spectrum
         
@@ -694,14 +694,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         #s1.multiresponse[1].arf = "../erosita/tm1_arf_open_000101v02.fits"
         s2.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
         
-        #if check_bkg:
-        #    x.Xset.chatter = 10
-        #    x.AllModels.show()
-        #    x.Xset.chatter = 0        
-
-        #x.Xset.chatter = 10        
+        #check_bkg()      
+      
         #mod.show()
-        #x.Xset.chatter = 0  
         
         # particle background
         
@@ -713,10 +708,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             mod_pbkg(i).values = list(params_part.values())[i-2]
             mod_pbkg(i).frozen = True
       
-        #if check_bkg:
-        #    x.Xset.chatter = 10
-        #    x.AllModels.show()
-        #    x.Xset.chatter = 0        
+        #check_bkg()       
         
     x.Fit.renorm('auto')
     x.Fit.nIterations = 100
@@ -743,9 +735,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     abund_from_fit = mod(3).values[0]
     
     if BACKGROUND:
-               
-        area_from_fit = mod(6).values[0]
-        mod(6).values = 0     # to calculate luminosity just from model, excluding background
+        
+        norm_from_fit = mod(5).values[0]       
+        area_from_fit = mod(6).values[0]       
+        #mod(6).values = 0     # to calculate luminosity just from model, excluding background
+        area_pbkg = mod_pbkg(1).values[0]
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
@@ -768,7 +762,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.axvline(borders[0], linestyle = '--', color='black')
             plt.axvline(borders[1], linestyle = '--', color='black')    
             x.Plot("ldata")
-            x.Plot.add = True #!!!!
+            #x.Plot.add = True #!!!!
             xVals = x.Plot.x()
             xErrors = x.Plot.xErr()
             yVals = x.Plot.y()
@@ -782,9 +776,6 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             if BACKGROUND:
             
                 xVals = x.Plot.x(2)
-                xErrors = x.Plot.xErr(2)
-                yVals = x.Plot.y(2)
-                yErrors = x.Plot.yErr(2)
                 modVals = x.Plot.model(2)
                 plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
                    
@@ -808,16 +799,20 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.axvline(borders[1], linestyle = '--', color='black')
         
             #plt.show()  
-        
+    
     x.Xset.chatter = 10
-
+    
     if not BACKGROUND:
+        os.system(f"rm {name1}")
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, abund_from_fit
     else:
-        return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit
+        os.system(f"rm {name1}")
+        os.system(f"rm {name2}")
+        os.system(f"rm {name3}")  
+        return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=50, bkg=False):
+def average_one_cluster(cl_num, N_usr=5, bkg=True):
 
     mean_temp = 0
     mean_lum = 0
@@ -829,10 +824,17 @@ def average_one_cluster(cl_num, N_usr=50, bkg=False):
     cl_lum = clusters.loc[cl_num]["Lx500"]
         
     if bkg:
+    
         D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
         R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
         cl_area = np.pi*R_500_rescaled**2*3600
-           
+        
+        mean_a4th2 = 0    
+        mean_a4th3 = 0
+        
+        a4ths2 = np.zeros(N_usr)
+        a4ths3 = np.zeros(N_usr)     
+                   
     #print(" |", cl_num,": ", end="")
         
     temps = np.zeros(N_usr)
@@ -844,11 +846,14 @@ def average_one_cluster(cl_num, N_usr=50, bkg=False):
 	    
         Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1, dbr=True,
 	                                Xplot=False, plot=False)
-    
         temps[i] = Ts[0][0]
         lumins[i] = Ts[1][0]
         avens[i] = Ts[2]
         a4ths[i] = Ts[3]
+         
+        if bkg:    
+            a4ths2[i] = Ts[4]
+            a4ths3[i] = Ts[5]
 	    
         #print(i+1, end="")
         
@@ -858,12 +863,19 @@ def average_one_cluster(cl_num, N_usr=50, bkg=False):
     mean_lum = np.mean(lumins)
     mean_aven = np.mean(avens)
     mean_a4th = np.mean(a4ths)
-        
+
     err_temp = np.std(temps)
     err_lum = np.std(lumins)
     err_aven = np.std(avens)
     err_a4th = np.std(a4ths)
-	    
+
+    if bkg:     
+	
+        mean_a4th2 = np.mean(a4ths2)
+        mean_a4th3 = np.mean(a4ths3)
+        err_a4th2 = np.std(a4ths2)
+        err_a4th3 = np.std(a4ths3)    
+    
     #temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
     #lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]
     #aven_usr1[cl_num] = [mean_aven, err_aven]
@@ -875,7 +887,7 @@ def average_one_cluster(cl_num, N_usr=50, bkg=False):
     if not bkg:
         return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [mean_a4th, err_a4th]
     else:
-        return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [cl_area, mean_a4th, err_a4th]
+        return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [cl_area, mean_a4th, err_a4th], [mean_a4th2, err_a4th2], [cl_area, mean_a4th3, err_a4th3]
         
     
 def calculate_all_and_average_it(BACKGROUND, write_to_file):
@@ -886,25 +898,21 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     #a4th_usr1 = {}   # either abundance (if no bkg) or A_from_fit (if with bkg)
     
     df_all = pd.DataFrame()
-    
-    #pool = multiprocessing.Pool(processes=6)
-    
-    #for cl_num in tqdm(clusters.index[:]):
-      
+           
     with multiprocessing.Pool(processes=6) as pool:
-        output = list(tqdm(pool.imap_unordered(average_one_cluster, clusters.index[:]), leave=False, total=len(clusters)))
-    
+        output = list(tqdm(pool.imap_unordered(average_one_cluster, clusters.index[:]), total=len(clusters)))
+    pool.close()
         #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
 
+    #for cl_num in tqdm(clusters.index[:]):
+    
         #df1 = pd.DataFrame(temp_usr1.values())
         #df2 = pd.DataFrame(lumin_usr1.values())
         #df3 = pd.DataFrame(aven_usr1.values())
         #df4 = pd.DataFrame(a4th_usr1.values())
         
         #df_all = pd.concat([df1, df2, df3, df4], axis=1)
-    
-    pool.close()
-    
+
     for o in output:
         
         df_add = pd.DataFrame(np.concatenate(o)).T        
@@ -921,7 +929,9 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
         df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
 	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
 	                  '$E_{av}$', '$\Delta E_{av}$',
-	                  '$A_0$', '$A_{fit}$','$\Delta A_{fit}$']
+	                  '$A_0$', '$A_{fit}$','$\Delta A_{fit}$',
+	                  'NORM', '$\Delta$ NORM',
+	                  '$B_0$', '$B_{fit}$','$\Delta B_{fit}$']
 	                 
     display(df_all)                  
     #df_all.index = aven_usr1.keys()
