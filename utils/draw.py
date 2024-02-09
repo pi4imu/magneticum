@@ -249,7 +249,8 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         
         #print(RMSp1)
     
-        if True:
+        if False:
+        
             jj=0
             kk=0
     

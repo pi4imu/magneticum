@@ -107,16 +107,16 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             whattodraw = whattodraw.drop("what", axis=1)
             nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*half_size*3600/ang_res))            
             
+            #fltr = Tophat2DKernel(2)
+            fltr = Gaussian2DKernel(1)
+            nmhg = convolve_fft(nmhg, fltr) 
+
             # some magic ...
                     
             shift = [int((RA_c-cntr[0])*3600/ang_res), int((DEC_c-cntr[1])*3600/ang_res)] 
             c1 = np.array(c)  + shift
             nmhg1 = kruzhok(int(R*3600/ang_res), c1, nmhg, int(R*3600/ang_res)+1)[0]
-            
-            #fltr = Tophat2DKernel(2)
-            fltr = Gaussian2DKernel(1)
-            nmhg1 = convolve(nmhg1, fltr)
-            
+  
             if draw_additional:
                 
                 plt.show()
@@ -138,7 +138,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             
             # searching for cutoff value in one pixel            
             
-            threshold = 0.9
+            threshold = 0.95
             
             beeens = np.geomspace(1, np.max(nmhg1.flatten()), 50)
             amount_in_bin, bin_borders = np.histogram(nmhg1.flatten(), bins = beeens)
@@ -177,7 +177,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                 plt.title(f"$x$-values are added up until their sum\nis right below {threshold*100:.0f} % cutoff")    
                 plt.axhline(cumulative[-1], ls='-.', color='green', label="Total sum")
                 plt.axhline(cumulative[-1]*threshold, ls='-.', color='red', label=f'Total sum $\\times$ {threshold}')
-                plt.axvline(number_cutoff, ls='--', color='red', label=f'Cutoff at\nnumber = {number_cutoff};\n {threshold_new*100:.2f}% reached')
+                plt.axvline(number_cutoff, ls='--', color='red', label=f'Cutoff at\nnumber = {number_cutoff:.2f};\n{threshold_new*100:.2f}% reached')
                 plt.legend(loc=4)
                 plt.subplot(121)
                 plt.axvline(number_cutoff, ls='--', color='red')
@@ -185,6 +185,52 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                 plt.subplots_adjust()                 
                 plt.show()
                         
+            # another method of excluding bright pixels (by making rings):
+            
+            if True:
+                
+                ffltr = nmhg1*0
+                
+                r_pixels_max = int(R*3600/ang_res)
+                brightness = []   #[k0[0].sum()/sum(k0[1].flatten())]
+            
+                ring_width = 10
+                                  
+                for rr in range(0, r_pixels_max+1, ring_width):
+        
+                    k1 = kruzhok(rr, c, nmhg, r_pixels_max+1)
+                    k2 = kruzhok(rr + ring_width, c, nmhg, r_pixels_max+1)
+                    ring = k2[0]-k1[0]
+                    koltso = (sum(k2[1].flatten())-sum(k1[1].flatten()))
+                    
+                    plt.figure(figsize=(11,3))                
+                    plt.subplot(131)
+                    plt.imshow(np.rot90(convolve(ring, fltr)), 
+                               norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), 
+                               origin='upper')
+                    plt.colorbar(fraction=0.046, pad=0.04)
+                    
+                    plt.subplot(132)
+                    bbiinnss = np.geomspace(1, np.max(ring.flatten()), 50)
+                    amount_in_bin, bin_borders = np.histogram(ring.flatten(), bins = bbiinnss)
+                    amount_in_bin = amount_in_bin/koltso
+                    bin_centers = (bin_borders[:-1]+bin_borders[1:])/2
+                    #bin_centers = [int(b) for b in bin_borders[:-1]]
+                    plt.plot(bin_centers, amount_in_bin)
+                    
+                    plt.subplot(133)
+                    cumulative = [sum(amount_in_bin[:i]) for i in range(0, len(amount_in_bin))]
+                    #number_cutoff = bin_centers[np.argmin(np.abs(cumulative-cumulative[-1]*threshold))]
+                    #index_cutoff = list(bin_centers).index(number_cutoff)
+                    #threshold_new = sum(amount_in_bin[:index_cutoff]) / cumulative[-1]
+                    plt.plot(bin_centers, cumulative)
+                    
+                    plt.subplots_adjust() 
+                    plt.show()
+                    #brightness.append(ring.sum()/(sum(k2[1].flatten())-sum(k1[1].flatten())))
+            
+            
+            
             # making masks and applying them to images
             
             nmhg_radial = nmhg
@@ -507,7 +553,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                
     # fakeit for input model (how erosita sees photons) saved to name1
     
-    identificator = f'_{current_cluster_num}_{getpid()}'
+    rn = np.random.randint(100)
+    identificator = f'_{current_cluster_num}_{getpid()}_{rn}'
     #print(multiprocessing.current_process())
     #print(multiprocessing.Process()._identity[0])
     name1 = 'fakeit'+identificator+'.pha'
@@ -554,8 +601,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     	            plt.subplot(1,2,1)
     	            x.Plot(model_scale)
     	            xVals_pbkg = x.Plot.x()[1:]
-    	            modVals_pbkg = np.array(x.Plot.model()[1:])/2536.69702148438
-    	            plt.plot(xVals_pbkg, modVals_pbkg, label="Model for pbkg / AREASCAL", alpha=0.9)
+    	            modVals_pbkg = np.array(x.Plot.model()[1:])   #/2536.69702148438
+    	            plt.plot(xVals_pbkg, modVals_pbkg, label="Model for pbkg", alpha=0.9)
         
         x.AllData.clear()
         fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
@@ -779,7 +826,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 modVals = x.Plot.model(2)
                 plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
                    
-            plt.legend(loc=3, framealpha=1)           
+            plt.legend(loc=1, framealpha=1)           
             XT = [0.1, 1, 10]
             plt.gca().set_xticks(ticks=XT, labels=XT)   
             plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=15)
@@ -900,7 +947,7 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     df_all = pd.DataFrame()
            
     with multiprocessing.Pool(processes=6) as pool:
-        output = list(tqdm(pool.imap_unordered(average_one_cluster, clusters.index[:]), total=len(clusters)))
+        output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
     pool.close()
         #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
 
