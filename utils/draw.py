@@ -55,7 +55,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_yticks(ti, ti)
     ax2.set_xticks(ti, ti)
     ax3.set_xticks(ti, ti)
-    #ax1.scatter(2.39539, 1.1103637527004389, color='red')
+    ax1.scatter(3.59873, 4.028185060146625, color='blue')
 
     #plt.subplot(222)
     
