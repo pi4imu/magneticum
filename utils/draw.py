@@ -55,7 +55,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_yticks(ti, ti)
     ax2.set_xticks(ti, ti)
     ax3.set_xticks(ti, ti)
-    ax1.scatter(3.59873, 4.028185060146625, color='blue')
+    #ax1.scatter(3.59873, 4.028185060146625, color='blue')
 
     #plt.subplot(222)
     
@@ -165,7 +165,7 @@ def draw_84_panels(mode):
         
         if mode=='IMAGE':
         
-            pho_list = extract_photons_from_cluster(cl_num, r = 1, draw=True)
+            pho_list = extract_photons_from_cluster(cl_num, r = 1, draw=True, delete_bright_regions=False)
         
         else:
         
@@ -173,7 +173,7 @@ def draw_84_panels(mode):
             #cl_lum = clusters.loc[cl_num]["Lx500"]
     
             SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius="R500",
-                                            dbr=True, Xplot=False, plot=True, draw_only=mode)
+                                            dbr=False, Xplot=False, plot=True, draw_only=mode)
 
             #temp_compare[cl_num] = [cl_T500, SP[0][:3]]
             #lumin_compare[cl_num] = [cl_lum, SP[1][:3]]

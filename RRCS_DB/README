@@ -14,4 +14,4 @@ Please ignore the default values. There is no fool-proof protection from enterin
 
 This atable model was made with the help of xspec-table-models script (https://github.com/mbursa/xspec-table-models).
 
-There is also a small script named 'atable.xcm' which (a) simulates observations with eROSITA's TM1, (b) calculates single-temperature approximation of these observations.
+There is also a small script named 'atable.xcm' which (a) produce cluster's spectrum as if it was observed with eROSITA's TM1, (b) calculates single-temperature approximation of this observation.

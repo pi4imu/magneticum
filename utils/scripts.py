@@ -55,8 +55,10 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         ang_res = 4
         half_size = 3*R_500_rescaled
         
-        hs4s = half_size
-        
+        if (current_cluster_number != 13334) and (current_cluster_number != 18589):
+            hs4s = half_size/3
+        else:
+            hs4s = half_size/1
         # making 2D histogram of size 2*half_size with center (RA_c, DEC_c) without drawing
                 
         SLICE2["what"] = np.where( (np.abs(SLICE2["RA"]-RA_c) < hs4s) & (np.abs(SLICE2["DEC"]-DEC_c) < hs4s), True, False)
@@ -65,6 +67,13 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*hs4s*3600/ang_res))
                        
         # centroid position
+        
+        #nmhg = np.zeros((100,100))
+        #for i in range(0, len(nmhg)):
+        #    for j in range(0, len(nmhg)):
+        #        if i>=70:
+        #            nmhg[i,j] = 1
+        #print(nmhg)
         
         psum = sum(nmhg.flatten())
         c_x, c_y = 0, 0
@@ -75,19 +84,24 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                 c_y = c_y + j*nmhg[i,j]/psum
         
         # position of centroid in units of pixels relative to the upper left border    
-        c = [int(c_x), int(c_y)]
+        c = [int(c_x), len(nmhg)-int(c_y)]
         
-        plt.imshow(np.rot90(nmhg),
-                   norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), 
-                   origin='upper')
-        plt.scatter(c_x, len(nmhg)-c_y, color='red')
-        plt.show()
-        #print(c)
+        if draw_additional:
+            plt.imshow(np.rot90(nmhg),
+                       norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), 
+                       origin='upper')
+            plt.scatter(c[0], c[1], color='red')
+            plt.scatter(int(len(nmhg)/2), int(len(nmhg)/2), color='magenta')
+            plt.gca().set_aspect('equal', 'box')
+            plt.xlim(c[0]-int(hs4s*3600/ang_res), c[0]+int(hs4s*3600/ang_res))
+            plt.ylim(c[1]+int(hs4s*3600/ang_res), c[1]-int(hs4s*3600/ang_res))
+            plt.gca().add_patch(plt.Circle(c, int(R*3600/ang_res), color='orangered', linestyle="--", lw=3, fill = False))
+            plt.show()
                 
         c_x_1 = RA_c - hs4s + c_x*ang_res/3600 
         c_y_1 = DEC_c - hs4s + c_y*ang_res/3600
         cntr = (c_x_1, c_y_1) # position in degrees
-        
+
         # taking photons from circle centered at centroid
         
         SLICE["check"]=np.where((SLICE["RA"]-c_x_1)**2+(SLICE["DEC"]-c_y_1)**2 <= R**2, True, False)
@@ -115,16 +129,23 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                                       True, False)
             whattodraw = SLICE3[SLICE3['what'] == True]
             whattodraw = whattodraw.drop("what", axis=1)
-            nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], bins=int(2*half_size*3600/ang_res))            
+            nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], 
+                                        bins=int(2*half_size*3600/ang_res),
+                                        range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
+                                                        (cntr[1]-half_size, cntr[1]+half_size)]))            
             
             #fltr = Tophat2DKernel(2)
             fltr = Gaussian2DKernel(1)
             nmhg = convolve_fft(nmhg, fltr) 
 
             # some magic ...
-                    
-            shift = [int((RA_c-cntr[0])*3600/ang_res), int((DEC_c-cntr[1])*3600/ang_res)] 
-            c1 = np.array(c) + shift
+            
+            #shift = [int((RA_c-cntr[0]+half_size)*3600/ang_res), int((DEC_c-cntr[1]+half_size)*3600/ang_res)]
+            shift = [int((half_size)*3600/ang_res), int((half_size)*3600/ang_res)]
+            c1 = shift 
+            
+            #c2 = np.array( ) + shift #+ shift2
+            
             nmhg1 = kruzhok(int(R*3600/ang_res), c1, nmhg, int(R*3600/ang_res)+1)[0]
   
             if draw_additional:
@@ -137,6 +158,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                 plt.subplot(121)
                 plt.title("nmhg")
                 plt.imshow(np.rot90(nmhg), norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), origin='upper')
+                plt.scatter(c1[0], c1[1], color='orangered')
                 plt.gca().add_patch(plt.Circle(c1, int(R*3600/ang_res), color='orangered', linestyle="--", lw=3, fill = False))
                 plt.colorbar(fraction=0.046, pad=0.04)
                 plt.subplot(122)
@@ -209,6 +231,8 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             filter_mask1 = nmhg1 <= number_cutoff
             nmhg1 = nmhg1*filter_mask1
             
+            #plt.imshow(np.rot90(filter_mask1))
+            #plt.show()
             
             # another method of excluding bright pixels (by making rings):
             
@@ -301,8 +325,8 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                 plt.colorbar(fraction=0.046, pad=0.04)
                 plt.show()
             
-            dddfff["RA_pix"] = (dddfff["RA"] - cntr[0] + R)*3600/ang_res # 1
-            dddfff["DEC_pix"] = (dddfff["DEC"] - cntr[1] + R)*3600/ang_res #- 2
+            dddfff["RA_pix"] =  (dddfff["RA"]  - cntr[0] + R)*3600/ang_res # - 1
+            dddfff["DEC_pix"] = (dddfff["DEC"] - cntr[1] + R)*3600/ang_res # - 1
             
             dddfff["RA_pix"] = dddfff["RA_pix"].astype(int)
             dddfff["DEC_pix"] = dddfff["DEC_pix"].astype(int)
@@ -322,6 +346,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                 plt.gca().set_aspect('equal', 'box')
                 plt.colorbar(fraction=0.046, pad=0.04)
                 plt.title('nmhg1 but in RA/DEC')
+                plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid')
                                                 
             dddfff = dddfff.drop("stay", axis=1) 
             dddfff = dddfff.drop("RA_pix", axis=1)
@@ -452,9 +477,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         x_s = (plt.gca().get_xlim()[1]+plt.gca().get_xlim()[0])/2
         y_s = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.95+plt.gca().get_ylim()[0]
         y_S = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.90+plt.gca().get_ylim()[0]
-        
         #plt.scatter(x_s, y_s, color='red')     
-        
         plt.plot((x_s+5/60, x_s-5/60), (y_s, y_s), color='white')
         plt.text(x_s, y_S, f'10 arcmin $\\approx$ {10/60*D_A.value*np.pi/180:.0f} kpc', 
                  color='white', ha='center', va='center')
@@ -636,7 +659,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                
     # fakeit for input model (how erosita sees photons) saved to name1
     
-    rn = np.random.randint(100)
+    rn = np.random.randint(1000)
     identificator = f'_{current_cluster_num}_{getpid()}_{rn}'
     #print(multiprocessing.current_process())
     #print(multiprocessing.Process()._identity[0])
@@ -671,27 +694,27 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             params_part[i+1] = df5[i+6]
         x.AllModels.clear()
         particle_bkg_model = x.Model("const*("+pbkg_model_name+")", sourceNum=1) #setPars=params_part,
-        particle_bkg_model(1).values = AREA # / 2536.69702148438
+        particle_bkg_model(1).values = AREA
         for i in range(2, 18):
             particle_bkg_model(i).values = list(params_part.values())[i-2]
             particle_bkg_model(i).frozen = True              
         
         #check_bkg()
 
-        if plot:
-            if draw_only!='DATA':
-                if draw_only==False:
-    	            plt.subplot(1,2,1)
-    	            x.Plot(model_scale)
-    	            xVals_pbkg = x.Plot.x()[1:]
-    	            modVals_pbkg = np.array(x.Plot.model()[1:])   #/2536.69702148438
-    	            plt.plot(xVals_pbkg, modVals_pbkg, label="Model for pbkg", alpha=0.9)
+        #if plot:
+        #    if draw_only!='DATA':
+        #        if draw_only==False:
+    	#            plt.subplot(1,2,1)
+    	#            x.Plot(model_scale)
+    	#            xVals_pbkg = x.Plot.x()[1:]
+    	#            modVals_pbkg = np.array(x.Plot.model()[1:])
+    	#            plt.plot(xVals_pbkg, modVals_pbkg, label="Model for pbkg", alpha=0.9)
         
         x.AllData.clear()
         fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                    arf = '', 
                             background = '', 
-                              exposure = 10000, 
+                              exposure = 10000000, 
                             correction = '', 
                           backExposure = '', 
                               fileName = name2)
@@ -753,13 +776,24 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         #clear_output(wait=False)
 
         x.AllData.clear()
-        x.AllData(f"1:1 {name3} 2:2 {name2}")
-        s1 = x.AllData(1)
-        s2 = x.AllData(2)
+        #x.AllData(f"1:1 {name3} 2:2 {name2}")
+        #s1 = x.AllData(1)
+        #s2 = x.AllData(2)
         
+        #s1.response = "../erosita/erosita_pirmf_v20210719.rmf"
+        #s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
+        #s2.response = "../erosita/erosita_pirmf_v20210719.rmf"
+        
+        x.AllData(f"{name3}")
+        s1 = x.AllData(1)
         s1.response = "../erosita/erosita_pirmf_v20210719.rmf"
         s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
-        s2.response = "../erosita/erosita_pirmf_v20210719.rmf"
+        
+        s1.background = "bkg/erass_pbkg_model.pha"
+        x.Xset.chatter = 10
+        x.AllData.show()
+        x.Xset.chatter = 0    
+        s1.backScale = 1
         
         #check_bkg()   
         
@@ -815,28 +849,26 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         for i in range(len(params_ph)):
             mod(i+7).values = list(params_ph.values())[i]
         
-        mod1 = x.AllModels(1)  # data group for model
-        mod2 = x.AllModels(2)  # data group for background    
-        mod2(5).values = "0, -1.0"   # normalization in apec = 0 
-        mod2(6).values = "0, -1.0"   # const before photon bkg = 0
+        #mod1 = x.AllModels(1)  # data group for model
+        #mod2 = x.AllModels(2)  # data group for background    
+        #mod2(5).values = "0, -1.0"   # normalization in apec = 0 
+        #mod2(6).values = "0, -1.0"   # const before photon bkg = 0
 
-        s1.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
+        #s1.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
         #s1.multiresponse[1].arf = "../erosita/tm1_arf_open_000101v02.fits"
-        s2.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
+        #s2.multiresponse[1] = "../erosita/erosita_pirmf_v20210719.rmf"
         
         #check_bkg()      
       
         #mod.show()
         
         # particle background
-        
-        mod_pbkg = x.Model('const*('+pbkg_model_name+')', 'PBKG', 2)        
-        mod_pbkg(1).values = AREA
-         
-        for i in range(2, 18):
-            mod_pbkg(i).frozen = True
-            mod_pbkg(i).values = list(params_part.values())[i-2]
-            mod_pbkg(i).frozen = True
+        #mod_pbkg = x.Model('const*('+pbkg_model_name+')', 'PBKG', 2)        
+        #mod_pbkg(1).values = AREA
+        #for i in range(2, 18):
+        #    mod_pbkg(i).frozen = True
+        #    mod_pbkg(i).values = list(params_part.values())[i-2]
+        #    mod_pbkg(i).frozen = True
       
         #check_bkg()       
         
@@ -869,7 +901,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         norm_from_fit = mod(5).values[0]       
         area_from_fit = mod(6).values[0]       
         #mod(6).values = 0     # to calculate luminosity just from model, excluding background
-        area_pbkg = mod_pbkg(1).values[0]
+        area_pbkg = 0 #mod_pbkg(1).values[0]
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
@@ -903,11 +935,10 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                          linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
             plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
             
-            if BACKGROUND:
-            
-                xVals = x.Plot.x(2)
-                modVals = x.Plot.model(2)
-                plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
+            #if BACKGROUND:
+            #    xVals = x.Plot.x(2)
+            #    modVals = x.Plot.model(2)
+            #    plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
                    
             plt.legend(loc=1, framealpha=1)           
             XT = [0.1, 1, 10]
