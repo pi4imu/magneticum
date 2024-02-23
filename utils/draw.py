@@ -233,22 +233,26 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.1f}}}$'
     
     plt.plot(lll, [func(popt, XX) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)
+    
+    inverse = False
         
     if with_scatter:
     
         ypyp = [(a-b)/b for a,b in zip(ys, [func(popt, XX) for XX in xs])]
     
         RMSp = np.sqrt( sum([(el**2) for el in ypyp])/len(ypyp))
-    
-        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp:.0f}%')
-        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
         
         ypyp1 = [(a-b)/b for a,b in zip(xs, [inv_func(YY, *popt) for YY in ys])]
         
         RMSp1 = np.sqrt( sum([(el**2) for el in ypyp1])/len(ypyp))
         
-        #print(RMSp1)
-    
+        print(RMSp1)
+        
+        #if inverse:
+        
+        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp:.0f}%')
+        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
+        
         if False:
         
             jj=0

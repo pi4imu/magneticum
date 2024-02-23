@@ -659,13 +659,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                
     # fakeit for input model (how erosita sees photons) saved to name1
     
-    rn = np.random.randint(1000)
+    rn = np.random.randint(100000)
     identificator = f'_{current_cluster_num}_{getpid()}_{rn}'
     #print(multiprocessing.current_process())
     #print(multiprocessing.Process()._identity[0])
     name1 = 'fakeit'+identificator+'.pha'
     name2 = 'pbkg'+identificator+'.pha'
     name3 = 'total'+identificator+'.pha'
+    name4 = 'pbkg107'+identificator+'.pha'
         
     x.AllData.clear()
     fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
@@ -714,10 +715,26 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                    arf = '', 
                             background = '', 
-                              exposure = 10000000, 
+                              exposure = 10000, 
                             correction = '', 
                           backExposure = '', 
                               fileName = name2)
+        x.AllData.fakeit(nSpectra = 1, 
+                         settings = fs, 
+                       applyStats = True,
+                       filePrefix = "",
+                          noWrite = False)
+                          
+        # creating pbkg with big exposure for this cluster
+        
+        x.AllData.clear()
+        fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
+                                   arf = '', 
+                            background = '', 
+                              exposure = 10000000, 
+                            correction = '', 
+                          backExposure = '', 
+                              fileName = name4)
         x.AllData.fakeit(nSpectra = 1, 
                          settings = fs, 
                        applyStats = True,
@@ -789,11 +806,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         s1.response = "../erosita/erosita_pirmf_v20210719.rmf"
         s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
         
-        s1.background = "bkg/erass_pbkg_model.pha"
-        x.Xset.chatter = 10
-        x.AllData.show()
-        x.Xset.chatter = 0    
-        s1.backScale = 1
+        s1.background = name4
+        #x.Xset.chatter = 10
+        #x.AllData.show()
+        #x.Xset.chatter = 0    
+        #s1.backScale = 1
         
         #check_bkg()   
         
@@ -900,7 +917,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
         norm_from_fit = mod(5).values[0]       
         area_from_fit = mod(6).values[0]       
-        #mod(6).values = 0     # to calculate luminosity just from model, excluding background
+        mod(6).values = 0     # to calculate luminosity just from model, excluding background
         area_pbkg = 0 #mod_pbkg(1).values[0]
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
@@ -940,7 +957,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             #    modVals = x.Plot.model(2)
             #    plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
                    
-            plt.legend(loc=1, framealpha=1)           
+            plt.legend(loc=3, framealpha=1)           
             XT = [0.1, 1, 10]
             plt.gca().set_xticks(ticks=XT, labels=XT)   
             plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=15)
@@ -954,7 +971,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             xVals = x.Plot.x()
             modVals = x.Plot.model()
             plt.plot(xVals, modVals, label="Best-fit model"+stats_for_header, color='red')
-            plt.legend(loc=1)
+            plt.legend(loc=3)
             plt.gca().set_xticks(ticks=XT, labels=XT)       
             plt.axvline(borders[0], linestyle = '--', color='black')
             plt.axvline(borders[1], linestyle = '--', color='black')
@@ -969,11 +986,15 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     else:
         os.system(f"rm {name1}")
         os.system(f"rm {name2}")
-        os.system(f"rm {name3}")  
+        os.system(f"rm {name3}")
+        os.system(f"rm {name4}") 
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=50, bkg=False):
+def average_one_cluster(cl_num, N_usr=10, bkg=True):
+
+    print()    
+    #print("bkg:", bkg, "N_usr:", N_usr)
 
     mean_temp = 0
     mean_lum = 0
@@ -1052,7 +1073,7 @@ def average_one_cluster(cl_num, N_usr=50, bkg=False):
         
     
 def calculate_all_and_average_it(BACKGROUND, write_to_file):
-
+    
     #temp_usr1 = {}
     #lumin_usr1 = {}
     #aven_usr1 = {}
@@ -1060,7 +1081,7 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     
     df_all = pd.DataFrame()
            
-    with multiprocessing.Pool(processes=6) as pool:
+    with multiprocessing.Pool(processes=6, maxtasksperchild=1) as pool:
         output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
     pool.close()
         #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
@@ -1100,9 +1121,3 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
         
     return None # temp_usr1, lumin_usr1, aven_usr1
 
-
-
-
-
-
-    
