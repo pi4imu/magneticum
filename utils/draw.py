@@ -222,7 +222,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
         
-        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
+        lbl = f'${l4legend} = ({popt[0]:.3f} \pm {perr[0]:.3f}) \cdot {{{argument}}}^{{{popt[1]:.3f} \pm {perr[1]:.3f}}}$'
     
         plt.fill_between(lll, 
                          [func(popt_u, XX) for XX in lll], 
@@ -250,7 +250,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         
         #if inverse:
         
-        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp:.0f}%')
+        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'Scatter = {100*RMSp1:.0f}%')
         plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
         
         if False:

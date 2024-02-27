@@ -525,7 +525,15 @@ def check_bkg():
     x.Xset.chatter = 10
     x.AllModels.show()
     x.Xset.chatter = 0
-    return None    
+    return None
+
+
+def avenergy():
+    s_i = x.AllData(1).values
+    ens = x.AllData(1).energies
+    E_i = [(e[0]+e[1])/2 for e in ens]
+    return np.dot(E_i, s_i)/np.sum(s_i)
+    
         
 # returns Tspec, Lspec and Eav
 
@@ -581,6 +589,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=N_channels)
     mmmm = x.Model("myModel")
     
+    #x.Xset.chatter = 10
+    x.AllModels.calcFlux("0.4 7.0")
+    potok_photons_without_bkg = x.AllData(1).flux
+    #x.Xset.chatter = 0
+    
     if plot:
     
         model_scale = "model" # emodel, eemodel
@@ -626,12 +639,24 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         params_ph={}
         for i in range(1,18):
             params_ph[i+3] = df4[i]
+            
         x.AllModels.clear()
         myModel_with_bkg = x.Model("myModel+const*("+bkg_model_name+")", setPars=params_ph, sourceNum=1)
         myModel_with_bkg(2).values = "1, -1.0"           # norm for myModel
         myModel_with_bkg(2).frozen = True
         myModel_with_bkg(3).values = AREA        # area of cluster = factor before background
-    
+        
+        #x.Xset.chatter = 10
+        x.AllModels.calcFlux("0.4 7.0")
+        potok_photons_total = x.AllData(1).flux
+        #x.Xset.chatter = 0
+        
+        fraction_phbkg = potok_photons_without_bkg[0]/potok_photons_total[0]
+        
+        #print(potok_photons_without_bkg, potok_photons_total)
+        #print(potok_photons_without_bkg[0]/potok_photons_total[0])
+        #print(potok_photons_without_bkg[3]/potok_photons_total[3])
+        
         #check_bkg()
     
     # plot initial model on the left panel
@@ -697,8 +722,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         particle_bkg_model = x.Model("const*("+pbkg_model_name+")", sourceNum=1) #setPars=params_part,
         particle_bkg_model(1).values = AREA
         for i in range(2, 18):
-            particle_bkg_model(i).values = list(params_part.values())[i-2]
-            particle_bkg_model(i).frozen = True              
+            particle_bkg_model(i).frozen = True
+            particle_bkg_model(i).values = list(params_part.values())[i-2].split()[0]
+            particle_bkg_model(i).frozen = True 
         
         #check_bkg()
 
@@ -816,17 +842,18 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
         # draw total spectrum
         
-        if draw_only!='MODEL':
-            if draw_only==False:
-                plt.subplot(122)
-            x.Plot("ldata")         
-            xVals = x.Plot.x()
-            xErrors = x.Plot.xErr()
-            yVals = x.Plot.y()
-            yErrors = x.Plot.yErr()
-            plt.errorbar(xVals[::every], yVals[::every], 
-                         yerr=yErrors[::every], xerr=xErrors[::every], 
-                         linewidth=0, elinewidth=1, label = "Total observed spectrum", color="green", alpha = 0.7)
+        if plot:
+            if draw_only!='MODEL':
+                if draw_only==False:
+                    plt.subplot(122)
+                x.Plot("ldata")         
+                xVals = x.Plot.x()
+                xErrors = x.Plot.xErr()
+                yVals = x.Plot.y()
+                yErrors = x.Plot.yErr()
+                plt.errorbar(xVals[::every], yVals[::every], 
+                             yerr=yErrors[::every], xerr=xErrors[::every], 
+                             linewidth=0, elinewidth=1, label = "Total observed spectrum", color="green", alpha = 0.7)
     
     # energy band for fitting:
           
