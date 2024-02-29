@@ -521,9 +521,16 @@ def kruzhok(r_pixels, mm, NMHG, d_pixels):
     return mask*kusok, mask
 
 
-def check_bkg():
+def check_model():
     x.Xset.chatter = 10
     x.AllModels.show()
+    x.Xset.chatter = 0
+    return None
+    
+    
+def check_data():
+    x.Xset.chatter = 10
+    x.AllData.show()
     x.Xset.chatter = 0
     return None
 
@@ -540,7 +547,14 @@ def avenergy():
 def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius=1, dbr=True, Xplot=False, plot=False, draw_only=False, draw_and_save_atable_model=False):
 
     x.Xset.chatter = 0
-    
+      
+    list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, 
+                                                   delete_bright_regions=dbr, draw=False)
+    REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
+    D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
+    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
+    AREA = np.pi*(inside_radius*R_500_rescaled)**2*3600   # min2
+
     # binning for proper imaging of model (doesn't affect fitting)
     # erosita_binning = fits.open('../erosita/erosita_pirmf_v20210719.rmf')[1].data["E_MIN"]
   
@@ -548,28 +562,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     #binning = np.linspace(0.1, 12.0, N_channels+1)
     binning = np.logspace(np.log10(0.1), np.log10(12.0), N_channels+1)
     #binning = np.append(erosita_binning, [12.0])
-    
-    list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, delete_bright_regions=dbr, draw=False)
-    REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
-    D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
-    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
-    AREA = np.pi*(inside_radius*R_500_rescaled)**2*3600   # min2
 
     # spectra from photons
     
     photons, energies_bins = np.histogram(list_of_photons["ENERGY"], bins = binning)
     energies = [(a+b)/2 for a, b in zip(energies_bins[:-1], energies_bins[1:])]
     dE = np.diff(energies_bins)  
-    model_input = [a/10000/1000 for a in photons] 
-    # 10000 (s) is exposition time and 1000 (cm2) is nominal area      
-    
-    if Xplot:
-        x.Plot.device = "/xs"
-    else:
-        x.Plot.device = '/null'
+    model_input = [a/10000/1000 for a in photons] # 10000 (s) is exposition time and 1000 (cm2) is nominal area      
         
-    x.Plot.xAxis = "keV"
-    
     # adding spectra as input model
         
     x.AllModels.clear()
@@ -585,27 +585,14 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
 
     myModelParInfo = (f"par1 Number {current_cluster_num} 1 1 1 1 0.001",)
     x.AllModels.addPyMod(myModel, myModelParInfo, 'add')
-    # dummy rsp for model in suitable form
-    x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=N_channels)
+    x.AllData.dummyrsp(lowE=0.1, highE=12.0, nBins=N_channels) # dummy rsp for model in suitable form
     mmmm = x.Model("myModel")
     
     #x.Xset.chatter = 10
-    x.AllModels.calcFlux("0.4 7.0")
-    potok_photons_without_bkg = x.AllData(1).flux
-    #x.Xset.chatter = 0
-    
-    if plot:
-    
-        model_scale = "model" # emodel, eemodel
-
-        if draw_only!='DATA':
-        
-            if draw_only==False:
-    	        plt.subplot(1,2,1)
-            x.Plot(model_scale)
-            xVals_no_bkg = x.Plot.x()[1:]
-            modVals_no_bkg = x.Plot.model()[1:]
-            
+    #x.AllModels.calcFlux("0.4 7.0")
+    #potok_photons_without_bkg = x.AllData(1).flux
+    #x.Xset.chatter = 0    
+                
     # writing our model to FITS-file
     
     #if draw_and_save_atable_model:
@@ -629,17 +616,82 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     #        x.Plot(model_scale)
     #        xVals_atable = x.Plot.x()[1:]
     #        modVals_atable = x.Plot.model()[1:]     
+   
+    rn = np.random.randint(100000)
+    identificator = f'_{current_cluster_num}_{getpid()}_{rn}'
+    name1 = 'fakeit'+identificator+'.pha'
+    if BACKGROUND:
+        name0 = 'PHbkg'+identificator+'.pha'    
+        name2 = 'pbkg'+identificator+'.pha'
+        name3 = 'total'+identificator+'.pha'
+        name4 = 'pbkg107'+identificator+'.pha'
+    
+    if Xplot:
+        x.Plot.device = "/xs"
+    else:
+        x.Plot.device = '/null'
+        
+    x.Plot.xAxis = "keV"
+    
+    # remember only cluster's spectrum
+    
+    if plot:
+    
+        model_scale = "model" # emodel, eemodel
+
+        if draw_only!='DATA':
+        
+            if draw_only==False:
+    	        plt.subplot(1,2,1)
+            x.Plot(model_scale)
+            xVals_no_bkg = x.Plot.x()[1:]
+            modVals_no_bkg = x.Plot.model()[1:]
     		        
     # defining the model with background included:
         
     if BACKGROUND:
     
+        # reading photon background model file
+    
         df4 = pd.read_csv("bkg/sky_bkg_full_arcmin_05cxb.xcm", header=None)[0]
         bkg_model_name = df4[0][6:]
         params_ph={}
+        params_only={}
         for i in range(1,18):
             params_ph[i+3] = df4[i]
+            params_only[i+1] = df4[i]
             
+        # creating ONLY photon background model and convolving it with eROSITA response
+        
+        x.AllModels.clear()
+        only_bkg = x.Model("const*("+bkg_model_name+")", setPars=params_only, sourceNum=1)
+        only_bkg(1).values = AREA        # area of cluster = factor before background
+        
+        #check_model()
+        
+        x.AllData.clear()
+        fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
+                                   arf = '../erosita/tm1_arf_open_000101v02.fits', 
+                            background = '', 
+                              exposure = 10000000, 
+                            correction = '', 
+                          backExposure = '', 
+                              fileName = name0)
+        x.AllData.fakeit(nSpectra = 1, 
+                         settings = fs, 
+                       applyStats = True,
+                       filePrefix = "",
+                          noWrite = False)
+        
+        x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")                      
+        #check_data()
+        Eav_PHbkg = avenergy()
+        s_i_PHbkg = x.AllData(1).rate[0]
+        #print("PHbkg", Eav_PHbkg, s_i_PHbkg)
+        x.AllData.clear()
+           
+        # making full model
+                
         x.AllModels.clear()
         myModel_with_bkg = x.Model("myModel+const*("+bkg_model_name+")", setPars=params_ph, sourceNum=1)
         myModel_with_bkg(2).values = "1, -1.0"           # norm for myModel
@@ -647,17 +699,15 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         myModel_with_bkg(3).values = AREA        # area of cluster = factor before background
         
         #x.Xset.chatter = 10
-        x.AllModels.calcFlux("0.4 7.0")
-        potok_photons_total = x.AllData(1).flux
-        #x.Xset.chatter = 0
-        
-        fraction_phbkg = potok_photons_without_bkg[0]/potok_photons_total[0]
-        
+        #x.AllModels.calcFlux("0.4 7.0")
+        #potok_photons_total = x.AllData(1).flux
+        #x.Xset.chatter = 0    
+        #fraction_phbkg = potok_photons_without_bkg[0]/potok_photons_total[0]
         #print(potok_photons_without_bkg, potok_photons_total)
         #print(potok_photons_without_bkg[0]/potok_photons_total[0])
         #print(potok_photons_without_bkg[3]/potok_photons_total[3])
         
-        #check_bkg()
+        #check_model()
     
     # plot initial model on the left panel
 
@@ -683,16 +733,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$')
                
     # fakeit for input model (how erosita sees photons) saved to name1
-    
-    rn = np.random.randint(100000)
-    identificator = f'_{current_cluster_num}_{getpid()}_{rn}'
-    #print(multiprocessing.current_process())
-    #print(multiprocessing.Process()._identity[0])
-    name1 = 'fakeit'+identificator+'.pha'
-    name2 = 'pbkg'+identificator+'.pha'
-    name3 = 'total'+identificator+'.pha'
-    name4 = 'pbkg107'+identificator+'.pha'
-        
+            
     x.AllData.clear()
     fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                arf = '../erosita/tm1_arf_open_000101v02.fits', 
@@ -706,6 +747,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                    applyStats = True,
                    filePrefix = "",
                       noWrite = False)
+
+    if BACKGROUND:
+        x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")    
+        #check_data()
+        Eav_photons = avenergy()
+        s_i_photons = x.AllData(1).rate[0]    
+        #print("cluster+PHbkg", Eav_photons, s_i_photons)               
                       
     # particle background
     
@@ -766,6 +814,12 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                        applyStats = True,
                        filePrefix = "",
                           noWrite = False)
+                          
+        x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")                      
+        #check_data()
+        Eav_pbkg = avenergy()
+        s_i_pbkg = x.AllData(1).rate[0]
+        #print("pbkg", Eav_pbkg, s_i_pbkg)       
         
         # clean all data and upload data for drawing only
         x.AllData.clear()	        
@@ -816,8 +870,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
         #os.system(f"rm {name3}")
         os.system(f"mathpha {name1}+{name2} R {name3} 10000 NULL 0 chatter=0")
-        #clear_output(wait=False)
-
+        #clear_output(wait=False)        
+        
         x.AllData.clear()
         #x.AllData(f"1:1 {name3} 2:2 {name2}")
         #s1 = x.AllData(1)
@@ -827,18 +881,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         #s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
         #s2.response = "../erosita/erosita_pirmf_v20210719.rmf"
         
-        x.AllData(f"{name3}")
+        x.AllData(f"{name3}")     
         s1 = x.AllData(1)
         s1.response = "../erosita/erosita_pirmf_v20210719.rmf"
         s1.response.arf = "../erosita/tm1_arf_open_000101v02.fits"
         
-        s1.background = name4
-        #x.Xset.chatter = 10
-        #x.AllData.show()
-        #x.Xset.chatter = 0    
+        s1.background = name4 
         #s1.backScale = 1
-        
-        #check_bkg()   
         
         # draw total spectrum
         
@@ -857,7 +906,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     
     # energy band for fitting:
           
-    x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")
+    x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")             
                      
     # defining the model for fitting:                    
     
@@ -946,16 +995,25 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         area_from_fit = mod(6).values[0]       
         mod(6).values = 0     # to calculate luminosity just from model, excluding background
         area_pbkg = 0 #mod_pbkg(1).values[0]
+        
+        #check_data()
+        Eav_total = avenergy()
+        s_i_total = x.AllData(1).rate[2]
+        #print("total", Eav_total, s_i_total)      
     
     x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
 
     # average energy:
     
-    s_i = x.AllData(1).values
-    ens = x.AllData(1).energies
-    E_i = [(e[0]+e[1])/2 for e in ens]
-    av_en = np.dot(E_i, s_i)/np.sum(s_i)
+    if not BACKGROUND:
+        s_i = x.AllData(1).values
+        ens = x.AllData(1).energies
+        E_i = [(e[0]+e[1])/2 for e in ens]
+        av_en = np.dot(E_i, s_i)/np.sum(s_i)
+    else:
+        av_en = ( Eav_total*s_i_total - Eav_PHbkg*s_i_PHbkg - Eav_pbkg*s_i_pbkg )/( s_i_total - s_i_PHbkg - s_i_pbkg )
+        #print(av_en, ( s_i_total - s_i_PHbkg - s_i_pbkg ) )
     
     stats_for_header = f" ($stat/dof=$ {x.Fit.statistic/x.Fit.dof:.3f})"
     
@@ -977,7 +1035,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.errorbar(xVals[::every], yVals[::every], 
                          yerr=yErrors[::every], xerr=xErrors[::every], 
                          linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
-            plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit")
+            plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit (excl. pbkg)")
             
             #if BACKGROUND:
             #    xVals = x.Plot.x(2)
@@ -1012,6 +1070,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, abund_from_fit
     else:
         os.system(f"rm {name1}")
+        os.system(f"rm {name0}")
         os.system(f"rm {name2}")
         os.system(f"rm {name3}")
         os.system(f"rm {name4}") 
