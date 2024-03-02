@@ -814,8 +814,21 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                        applyStats = True,
                        filePrefix = "",
                           noWrite = False)
-                          
-        x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")                      
+        #plt.subplot(122)
+        #x.Plot("ldata")
+        ##x.Plot.add = True #!!!!
+        #xVals = x.Plot.x()
+        #xErrors = x.Plot.xErr()
+        #yVals = x.Plot.y()
+        #yErrors = x.Plot.yErr()
+        #modVals = x.Plot.model()
+        #every=1
+        #plt.errorbar(xVals[::every], yVals[::every], 
+        #             yerr=yErrors[::every], xerr=xErrors[::every], 
+        #             linewidth=0, elinewidth=1, color='y', label = "pbkg10^7", alpha=1)
+                                           
+        x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")  
+        pbkg_for_red_line = x.AllData(1).values                  
         #check_data()
         Eav_pbkg = avenergy()
         s_i_pbkg = x.AllData(1).rate[0]
@@ -1035,6 +1048,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.errorbar(xVals[::every], yVals[::every], 
                          yerr=yErrors[::every], xerr=xErrors[::every], 
                          linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
+            #print(s_i_total/(s_i_total - s_i_pbkg))
             plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit (excl. pbkg)")
             
             #if BACKGROUND:
