@@ -1006,7 +1006,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
         norm_from_fit = mod(5).values[0]       
         area_from_fit = mod(6).values[0]       
-        mod(6).values = 0     # to calculate luminosity just from model, excluding background
+        #mod(6).values = 0     # to calculate luminosity just from model, excluding background
         area_pbkg = 0 #mod_pbkg(1).values[0]
         
         #check_data()
@@ -1169,7 +1169,7 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
     if not bkg:
         return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [mean_a4th, err_a4th]
     else:
-        return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [cl_area, mean_a4th, err_a4th], [mean_a4th2, err_a4th2], [cl_area, mean_a4th3, err_a4th3]
+        return [cl_T500, mean_temp, err_temp], [cl_lum, mean_lum, err_lum], [mean_aven, err_aven], [cl_area, mean_a4th, err_a4th], [mean_a4th2, err_a4th2] #, [cl_area, mean_a4th3, err_a4th3]
         
     
 def calculate_all_and_average_it(BACKGROUND, write_to_file):
@@ -1180,10 +1180,12 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     #a4th_usr1 = {}   # either abundance (if no bkg) or A_from_fit (if with bkg)
     
     df_all = pd.DataFrame()
+    output=[]
            
     with multiprocessing.Pool(processes=6, maxtasksperchild=1) as pool:
         output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
     pool.close()
+    pool.join()
         #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
 
     #for cl_num in tqdm(clusters.index[:]):
@@ -1212,8 +1214,8 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
 	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
 	                  '$E_{av}$', '$\Delta E_{av}$',
 	                  '$A_0$', '$A_{fit}$','$\Delta A_{fit}$',
-	                  'NORM', '$\Delta$ NORM',
-	                  '$B_0$', '$B_{fit}$','$\Delta B_{fit}$']
+	                  'NORM', '$\Delta$ NORM']
+	                  #'$B_0$', '$B_{fit}$','$\Delta B_{fit}$']
 	                 
     display(df_all)                  
     #df_all.index = aven_usr1.keys()
