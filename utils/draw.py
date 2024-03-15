@@ -150,7 +150,7 @@ def draw_84_panels(mode):
     else:
         size = 5
 
-    plt.figure(figsize=((size)*7+6+2, 5*12+11))
+    plt.figure(figsize=((size)*7+6*3, 5*12+11*2.5))
     plt.tight_layout()
     
     #if mode!='IMAGE':
@@ -165,7 +165,7 @@ def draw_84_panels(mode):
         
         if mode=='IMAGE':
         
-            pho_list = extract_photons_from_cluster(cl_num, r = 1, draw=True, delete_bright_regions=False)
+            pho_list = extract_photons_from_cluster(cl_num, r = 1, draw=True, delete_bright_regions=True)
         
         else:
         
@@ -250,7 +250,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         
         print(RMSp, RMSp1)
                
-        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'$1\sigma$ prediction band x-axis ($\pm${100*RMSp1:.1f}%)')
+        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)')
         plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
         
         if False:

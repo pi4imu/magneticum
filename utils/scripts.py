@@ -124,6 +124,8 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         
         if delete_bright_regions:
         
+            number_of_unfiltered_photons = len(dddfff)
+        
             # recalculate nmhg relative to centroid
             SLICE3["what"] = np.where( (np.abs(SLICE3["RA"]-c_x_1) < half_size) & (np.abs(SLICE3["DEC"]-c_y_1) < half_size),
                                       True, False)
@@ -350,7 +352,12 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                                                 
             dddfff = dddfff.drop("stay", axis=1) 
             dddfff = dddfff.drop("RA_pix", axis=1)
-            dddfff = dddfff.drop("DEC_pix", axis=1)            
+            dddfff = dddfff.drop("DEC_pix", axis=1)
+            
+            # number_of_unfiltered_photons
+            
+            number_of_filtered_photons = len(dddfff)
+            percent_of_photons = number_of_filtered_photons/number_of_unfiltered_photons         
                
             # here we obtain brightness profile inside R_500_rescaled               
                
@@ -489,7 +496,11 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         plt.xlabel("RA, deg")
         plt.ylabel("DEC, deg")
         plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", fraction=0.046, pad=0.04)
-        plt.title(f'#{current_cluster_number}: z={ztrue:.3f}, A={AREA:.1f} min$^2$', fontsize=15)
+        ttiittllee = f'#{current_cluster_number}: z={ztrue:.3f}, A={AREA:.1f} min$^2$'
+        if not delete_bright_regions:
+            plt.title(ttiittllee, fontsize=15)
+        else:
+            plt.title(ttiittllee+f'\nPercentage of remaining photons: {100*percent_of_photons:.1f}%', fontsize=15)
         
         handles, labels = plt.gca().get_legend_handles_labels()
         #l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
@@ -650,6 +661,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     # defining the model with background included:
         
     if BACKGROUND:
+    
+        AREA = AREA * 10
     
         # reading photon background model file
     
@@ -1001,21 +1014,6 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     T_spec_right = mod(2).error[1]
     
     abund_from_fit = mod(3).values[0]
-    
-    if BACKGROUND:
-        
-        norm_from_fit = mod(5).values[0]       
-        area_from_fit = mod(6).values[0]       
-        #mod(6).values = 0     # to calculate luminosity just from model, excluding background
-        area_pbkg = 0 #mod_pbkg(1).values[0]
-        
-        #check_data()
-        Eav_total = avenergy()
-        s_i_total = x.AllData(1).rate[2]
-        #print("total", Eav_total, s_i_total)      
-    
-    x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
-    luminosity = x.AllData(1).lumin
 
     # average energy:
     
@@ -1025,14 +1023,27 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         E_i = [(e[0]+e[1])/2 for e in ens]
         av_en = np.dot(E_i, s_i)/np.sum(s_i)
     else:
+        #check_data()
+        Eav_total = avenergy()
+        s_i_total = x.AllData(1).rate[2]
+        #print("total", Eav_total, s_i_total)      
         av_en = ( Eav_total*s_i_total - Eav_PHbkg*s_i_PHbkg - Eav_pbkg*s_i_pbkg )/( s_i_total - s_i_PHbkg - s_i_pbkg )
         #print(av_en, ( s_i_total - s_i_PHbkg - s_i_pbkg ) )
+        
+        norm_from_fit = mod(5).values[0]       
+        area_from_fit = mod(6).values[0]       
+        mod(6).values = 0     # to calculate luminosity just from model, excluding background
+        #area_pbkg = 0 #mod_pbkg(1).values[0]
     
-    stats_for_header = f" ($stat/dof=$ {x.Fit.statistic/x.Fit.dof:.3f})"
+    x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
+    luminosity = x.AllData(1).lumin
     
     # plotting best-fit model at data panel:
     
     if plot:
+    
+        stats_for_header = f" ($stat/dof=$ {x.Fit.statistic/x.Fit.dof:.3f})"
+    
         if draw_only!='MODEL':        
             if draw_only==False:
                 plt.subplot(122)           
@@ -1088,7 +1099,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         os.system(f"rm {name2}")
         os.system(f"rm {name3}")
         os.system(f"rm {name4}") 
-        return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit, area_pbkg
+        return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit #, area_pbkg
 
 
 def average_one_cluster(cl_num, N_usr=10, bkg=True):
@@ -1112,10 +1123,10 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
         cl_area = np.pi*R_500_rescaled**2*3600
         
         mean_a4th2 = 0    
-        mean_a4th3 = 0
+        #mean_a4th3 = 0
         
         a4ths2 = np.zeros(N_usr)
-        a4ths3 = np.zeros(N_usr)     
+        #a4ths3 = np.zeros(N_usr)     
                    
     #print(" |", cl_num,": ", end="")
         
@@ -1135,7 +1146,7 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
          
         if bkg:    
             a4ths2[i] = Ts[4]
-            a4ths3[i] = Ts[5]
+            #a4ths3[i] = Ts[5]
 	    
         #print(i+1, end="")
         
@@ -1154,9 +1165,9 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
     if bkg:     
 	
         mean_a4th2 = np.mean(a4ths2)
-        mean_a4th3 = np.mean(a4ths3)
+        #mean_a4th3 = np.mean(a4ths3)
         err_a4th2 = np.std(a4ths2)
-        err_a4th3 = np.std(a4ths3)    
+        #err_a4th3 = np.std(a4ths3)    
     
     #temp_usr1[cl_num] = [cl_T500, mean_temp, err_temp]
     #lumin_usr1[cl_num] = [cl_lum, mean_lum, err_lum]

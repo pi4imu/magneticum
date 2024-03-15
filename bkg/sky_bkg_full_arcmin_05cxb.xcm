@@ -13,7 +13,7 @@ model constant(apec + wabs*(apec + apec + const*pow))
 1.00000     
 0.0         
 8.9700E-05
-0.0
+0.5
 1.47
 0.001052
 
