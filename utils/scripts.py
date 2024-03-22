@@ -662,7 +662,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         
     if BACKGROUND:
     
-        AREA = AREA * 10
+        # AREA = AREA * 10
     
         # reading photon background model file
     

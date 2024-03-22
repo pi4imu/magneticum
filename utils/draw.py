@@ -191,10 +191,10 @@ def inv_func(y, a, b):
            
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
-    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.15,
-                 elinewidth=1, capsize=2, color=clr, label=l4dots)
+    #plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.15,
+    #             elinewidth=1, capsize=2, color=clr, label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.15)
+    #plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.15)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
@@ -202,12 +202,18 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
     #popt, pcov = curve_fit(func, xs, ys, maxfev=5000)
 
     power = odr.Model(func)
-    mydata = odr.Data(xs, ys, wd = 1./(np.array(x_es)++0.00001), we = 1./(np.array(y_es)+0.00001))
-    myodr = odr.ODR(mydata, power, beta0=[0, 0])
+    #mydata = odr.Data(xs, ys, wd = 1./(np.array(x_es)+0.00001), we = 1./(np.array(y_es)+0.00001))
+    mydata = odr.RealData(xs, ys, sx=(np.array(x_es)+0.00001), sy=(np.array(y_es)+0.00001))
+    myodr = odr.ODR(mydata, power, beta0=[0, 0],  maxit=1000)
     output = myodr.run()
     popt = output.beta
-    #print(popt)        
-
+    #print(popt)
+    output.pprint()
+    #print("stop reason:", output.stopreason)     
+    #print("info:", output.info)
+    #print("sd_beta:", output.sd_beta)
+    #print("sqrt(diag(cov):", np.sqrt(np.diag(output.cov_beta)))
+    
     if with_intervals:
 
         perr = output.sd_beta # np.sqrt(np.diagonal(pcov))
@@ -226,7 +232,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
       
     else:
         
-        lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.1f}}}$'    
+        lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.2f}}}$'    
     
     plt.plot(lll, [func(popt, XX) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)    
     
@@ -264,11 +270,11 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
                        
                 if ggg<=func(popt, XCV)*(1-RMSp) or (ggg>=func(popt, XCV)*(1+RMSp)):
                     jj+=1
-                    plt.scatter(XCV, ggg, c='red')
+                    plt.scatter(XCV, ggg, c='dodgerblue', marker='o')
                 
                 if ggg>=func(popt, XCV)*(1-RMSp) and (ggg<=func(popt, XCV)*(1+RMSp)):
                     kk+=1
-                    plt.scatter(XCV, ggg, c='yellow')
+                    plt.scatter(XCV, ggg, c='orangered')
             
             print(kk/84, jj/84, jj+kk)
     
