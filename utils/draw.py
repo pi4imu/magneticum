@@ -37,26 +37,25 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
             ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
-    ax1.plot([1, 9], [1, 9], color='black', linewidth=1)
+    ax1.plot([1, 1.25], [1, 1.25], color='black', linewidth=1)
 
     ax1.set_xlabel(x_label, fontsize=11)
     ax1.set_ylabel(y_label_left, fontsize=11)
 
-    ax1.set_xlim(1.5, 7.2)
-    ax1.set_ylim(1.5, 7.2)
+ #   ax1.set_xlim(1.5, 7.2)
+ #   ax1.set_ylim(1.5, 7.2)
     
-    ax1.set_xscale("log")
-    ax1.set_yscale("log")  
-    ax2.set_xscale("log")
-    ax3.set_xscale("log")
+ #   ax1.set_xscale("log")
+ #   ax1.set_yscale("log")  
+ #   ax2.set_xscale("log")
+ #   ax3.set_xscale("log")
     
-    ti = [2,3,4,5,6,7]
-    ax1.set_xticks(ti, ti)
-    ax1.set_yticks(ti, ti)
-    ax2.set_xticks(ti, ti)
-    ax3.set_xticks(ti, ti)
-    #ax1.scatter(3.59873, 4.028185060146625, color='blue')
-
+ #   ti = [2,3,4,5,6,7]
+ #   ax1.set_xticks(ti, ti)
+ #   ax1.set_yticks(ti, ti)
+ #   ax2.set_xticks(ti, ti)
+ #   ax3.set_xticks(ti, ti)
+ 
     #plt.subplot(222)
     
     y_d = [YY-XX for YY, XX in zip(yy, xx)]
@@ -86,7 +85,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax4.axhline(0, color='black', linewidth=1)
     
     RMS = np.sqrt( sum([(el**2) for el in y_d])/len(y_d) )  
-    xxxccc = np.linspace(-3,3,100)
+    xxxccc = np.linspace(-3,3,1000)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
@@ -127,7 +126,7 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax5.axhline(0, color='black', linewidth=1)
     
     RMS = np.sqrt(sum([(el**2) for el in y_p])/len(y_p))
-    xxxccc = np.linspace(-1,1,100)
+    xxxccc = np.linspace(-1,1,1000)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
     ax5.plot(yyyccc, xxxccc, color='black')
     
@@ -191,10 +190,10 @@ def inv_func(y, a, b):
            
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
-    #plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=4, alpha=0.15,
-    #             elinewidth=1, capsize=2, color=clr, label=l4dots)
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.95,
+                 elinewidth=1, capsize=2, color='r', label=l4dots)
                  
-    #plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.15)
+    plt.scatter(xs, ys, marker='o', s=6, color='r', alpha=0.95)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)

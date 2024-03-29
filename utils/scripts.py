@@ -841,7 +841,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         #             linewidth=0, elinewidth=1, color='y', label = "pbkg10^7", alpha=1)
                                            
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")  
-        pbkg_for_red_line = x.AllData(1).values                  
+                          
         #check_data()
         Eav_pbkg = avenergy()
         s_i_pbkg = x.AllData(1).rate[0]
