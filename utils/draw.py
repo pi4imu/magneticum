@@ -42,19 +42,21 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     ax1.set_xlabel(x_label, fontsize=11)
     ax1.set_ylabel(y_label_left, fontsize=11)
 
- #   ax1.set_xlim(1.5, 7.2)
- #   ax1.set_ylim(1.5, 7.2)
+    if False:
     
- #   ax1.set_xscale("log")
- #   ax1.set_yscale("log")  
- #   ax2.set_xscale("log")
- #   ax3.set_xscale("log")
+        ax1.set_xlim(1.5, 7.2)
+        ax1.set_ylim(1.5, 7.2)
     
- #   ti = [2,3,4,5,6,7]
- #   ax1.set_xticks(ti, ti)
- #   ax1.set_yticks(ti, ti)
- #   ax2.set_xticks(ti, ti)
- #   ax3.set_xticks(ti, ti)
+        ax1.set_xscale("log")
+        ax1.set_yscale("log")  
+        ax2.set_xscale("log")
+        ax3.set_xscale("log")
+    
+        ti = [2,3,4,5,6,7]
+        ax1.set_xticks(ti, ti)
+        ax1.set_yticks(ti, ti)
+        ax2.set_xticks(ti, ti)
+        ax3.set_xticks(ti, ti)
  
     #plt.subplot(222)
     
@@ -191,9 +193,9 @@ def inv_func(y, a, b):
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
     plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.95,
-                 elinewidth=1, capsize=2, color='r', label=l4dots)
+                 elinewidth=1, capsize=2, color='g', label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color='r', alpha=0.95)
+    plt.scatter(xs, ys, marker='o', s=6, color='g', alpha=0.95)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
@@ -227,7 +229,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
         
-        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.1f} \pm {perr[1]:.1f}}}$'
+        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
       
     else:
         

@@ -1035,7 +1035,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         mod(6).values = 0     # to calculate luminosity just from model, excluding background
         #area_pbkg = 0 #mod_pbkg(1).values[0]
     
-    x.AllModels.calcLumin(f"0.1 10.0 {REDSHIFT}")
+    x.AllModels.calcLumin(f"0.5 2.0 {REDSHIFT}")
     luminosity = x.AllData(1).lumin
     
     # plotting best-fit model at data panel:
@@ -1085,7 +1085,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.gca().set_xticks(ticks=XT, labels=XT)       
             plt.axvline(borders[0], linestyle = '--', color='black')
             plt.axvline(borders[1], linestyle = '--', color='black')
-        
+            plt.xlim(0.08, 11)
             #plt.show()  
     
     x.Xset.chatter = 10
@@ -1102,7 +1102,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit #, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=10, bkg=True):
+def average_one_cluster(cl_num, N_usr=50, bkg=False):
 
     print()    
     #print("bkg:", bkg, "N_usr:", N_usr)
