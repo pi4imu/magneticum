@@ -37,12 +37,12 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
             ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
-    ax1.plot([1, 1.25], [1, 1.25], color='black', linewidth=1)
+    ax1.plot([1, 9], [1, 9], color='black', linewidth=1)
 
     ax1.set_xlabel(x_label, fontsize=11)
     ax1.set_ylabel(y_label_left, fontsize=11)
 
-    if False:
+    if True:
     
         ax1.set_xlim(1.5, 7.2)
         ax1.set_ylim(1.5, 7.2)
@@ -193,9 +193,9 @@ def inv_func(y, a, b):
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
     plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.95,
-                 elinewidth=1, capsize=2, color='g', label=l4dots)
+                 elinewidth=1, capsize=2, color='green', label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color='g', alpha=0.95)
+    plt.scatter(xs, ys, marker='o', s=6, color='green', alpha=0.95)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
