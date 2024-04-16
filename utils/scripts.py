@@ -701,6 +701,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         Eav_PHbkg = avenergy()
         s_i_PHbkg = x.AllData(1).rate[0]
         #print("PHbkg", Eav_PHbkg, s_i_PHbkg)
+        x.Plot("ldata")
+        forredline1 = x.Plot.model()
         x.AllData.clear()
            
         # making full model
@@ -766,8 +768,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         #check_data()
         Eav_photons = avenergy()
         s_i_photons = x.AllData(1).rate[0]    
-        #print("cluster+PHbkg", Eav_photons, s_i_photons)               
-                      
+        #print("cluster+PHbkg", Eav_photons, s_i_photons)
+                  
     # particle background
     
     x.AllModels.clear()
@@ -845,7 +847,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         #check_data()
         Eav_pbkg = avenergy()
         s_i_pbkg = x.AllData(1).rate[0]
-        #print("pbkg", Eav_pbkg, s_i_pbkg)       
+        #print("pbkg", Eav_pbkg, s_i_pbkg)                       
+        x.Plot("ldata")
+        forredline2 = x.Plot.model()
         
         # clean all data and upload data for drawing only
         x.AllData.clear()	        
@@ -882,7 +886,6 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 plt.errorbar(xVals[::every], yVals[::every], 
                              yerr=yErrors[::every], xerr=xErrors[::every], 
                              linewidth=0, elinewidth=1, label = "Only p.bkg", color = 'darkviolet')    
-        
             plt.xscale('log')
             plt.yscale('log')
             plt.legend(loc=1)   
@@ -1060,7 +1063,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                          yerr=yErrors[::every], xerr=xErrors[::every], 
                          linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
             #print(s_i_total/(s_i_total - s_i_pbkg))
-            plt.plot(xVals, modVals, linewidth=2, color='red', label="Best-fit (excl. pbkg)")
+            plt.plot(xVals, np.array(modVals)+np.array(forredline1), linewidth=2, color='red', label="Best-fit (excl. pbkg)")
             
             #if BACKGROUND:
             #    xVals = x.Plot.x(2)

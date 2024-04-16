@@ -321,6 +321,158 @@ def calculate_scatter(xs, ys, plot=True):
     return RMSp
     
     
+def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_right_up, y_label_right_down, clr, NnNn, cmap=False, cmap_label="Don't forget to rename me!"):
+   
+    if not cmap:   
+        fig = plt.figure(figsize=(11.5,5.5))
+    else:
+        fig = plt.figure(figsize=(6.7, 11))
+        NORM = matplotlib.colors.Normalize(vmin=min(cmap), vmax=max(cmap), clip=True)
+        MAPPER = cm.ScalarMappable(norm=NORM, cmap='rainbow')
+        COLOUR = np.array([(MAPPER.to_rgba(v)) for v in cmap])
     
+#    plt.suptitle(f"    Mean values for {NnNn} realisations", fontsize=15)
+    
+    gs = GridSpec(4, 4, height_ratios=[1, 0.02, 0.5, 0.5], width_ratios=[1, 0.05, 0.05, 0.15], hspace = 0., wspace = 0.)
+    ax1 = fig.add_subplot(gs[0:2, 0:1])
+    ax2 = fig.add_subplot(gs[8])
+    ax3 = fig.add_subplot(gs[12])
+    ax4 = fig.add_subplot(gs[9:12])
+    ax5 = fig.add_subplot(gs[13:16])
+    if cmap:
+        ax6 = fig.add_subplot(gs[2])
+    #plt.subplots_adjust()
+    #gs.tight_layout(figure=fig)
+
+    #plt.subplot(121)
+
+    xx  = [a[1] for a in x_array]
+    xxe = [a[2] for a in x_array]
+    yy  = [a[1] for a in y_array]
+    yye = [a[2] for a in y_array]
+
+    if not cmap:
+        ax1.errorbar(xx, yy, xerr=xxe, yerr=yye, linewidth=0, elinewidth=1, 
+                     capsize=3, color=clr, marker='o', markersize=3)
+    else:
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, yy, yye, COLOUR):
+            ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
+            ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
+
+    ax1.plot([1, 9], [1, 9], color='black', linewidth=1)
+
+    ax1.set_xlabel(x_label, fontsize=13)
+    ax1.set_ylabel(y_label_left, fontsize=13)
+
+    if True:
+    
+        ax1.set_xlim(1.7, 7.2)
+        ax1.set_ylim(1.7, 7.2)
+    
+        ax1.set_xscale("log")
+        ax1.set_yscale("log")  
+        ax2.set_xscale("log")
+        ax3.set_xscale("log")
+    
+        ti = [2,3,4,5,6,7]
+        ax1.set_xticks(ti, ti, size=12)
+        ax1.set_yticks(ti, ti, size=12)
+        ax2.set_xticks(ti, ti, size=12)
+        ax2.tick_params(labelsize=12)
+        ax3.set_xticks(ti, ti, size=12)
+        ax3.tick_params(labelsize=12)
+        
+        ax1.tick_params(axis="x", direction="inout", length=8)
+        ax2.tick_params(axis="x", direction="inout", length=8)
+        ax3.tick_params(axis="x", direction="inout", length=8)
+        
+        ax2.xaxis.set_ticks_position('default')
+        ax3.xaxis.set_ticks_position('both')
+ 
+    #plt.subplot(222)
+    
+    y_d = [YY-XX for YY, XX in zip(yy, xx)]
+    y_d_err = [a+b for a, b in zip(xxe, yye)]
+
+    if not cmap:
+        ax2.errorbar(xx, y_d, xerr=xxe, yerr=y_d_err, 
+                     linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
+    else:
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_d, y_d_err, COLOUR):
+            ax2.plot(xxx, yyy, 'o', color=col, markersize=3)
+            ax2.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
+
+    ax2.axhline(0, color='black', linewidth=1)
+    ax2.set_ylabel(y_label_right_up, fontsize=13)
+    #ax2.set_ylim(-3, 3)
+    
+    leftb, rightb = ax1.get_xlim()
+    leftc, rightc = ax2.get_ylim()
+    
+    ax2.set_xlim(leftb, rightb)
+        
+    ba, bi, _ = ax4.hist(y_d, bins=20, histtype='stepfilled', orientation="horizontal", color=clr, density=True)
+    ax4.set_ylim((leftc, rightc))
+    #ax4.set_xscale("log")
+    ax4.set_yticks([],[])
+    ax4.set_xticks([],[])
+    ax4.xaxis.set_ticks_position('none') 
+    ax4.axhline(0, color='black', linewidth=1)
+    
+    RMS = np.sqrt( sum([(el**2) for el in y_d])/len(y_d) )  
+    xxxccc = np.linspace(-3,3,1000)
+    yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
+    ax4.plot(yyyccc, xxxccc, color='black')
+    
+    ax4.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV", color='white')
+    ax4.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV", color='white')
+    ax4.legend(handlelength=0, frameon=False, fontsize=10, loc=9)
+
+    #plt.subplot(224)
+    
+    y_p = [(YY-XX)/XX for YY, XX in zip(yy, xx)]
+    y_p_err = [a/b*(aa/a+bb/b) for a, aa, b, bb in zip(yy, yye, xx, xxe)]
+
+    if not cmap:
+        ax3.errorbar(xx, y_p, xerr=xxe, yerr=y_p_err, linewidth=0, elinewidth=1, capsize=3, color=clr, marker='o', markersize=3)
+        ax3.scatter(xx, y_p, color=clr, marker='o', s=3)
+    else:
+        for xxx, ex, yyy, ey, col in zip(xx, xxe, y_p, y_p_err, COLOUR):
+            ax3.plot(xxx, yyy, 'o', color=col, markersize=3)
+            ax3.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
+                 
+    #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
+    #ax3.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
+
+    ax3.axhline(0, color='black', linewidth=1)
+    ax3.set_ylabel(y_label_right_down, fontsize=13)
+    ax3.set_xlabel(x_label, fontsize=13)
+    #ax3.set_ylim(-0.8, 0.8)
+    
+    ax3.set_xlim(leftb, rightb)
+    leftd, rightd = ax3.get_ylim()
+        
+    ba, bi, _ = ax5.hist(y_p, bins=20, histtype='stepfilled', orientation="horizontal", color=clr, density=True)
+    ax5.set_ylim((leftd, rightd))
+    #ax5.set_xscale("log")
+    ax5.set_yticks([],[])
+    ax5.set_xticks([],[])
+    ax5.xaxis.set_ticks_position('none') 
+    ax5.axhline(0, color='black', linewidth=1)
+    
+    RMS = np.sqrt(sum([(el**2) for el in y_p])/len(y_p))
+    xxxccc = np.linspace(-1,1,1000)
+    yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
+    ax5.plot(yyyccc, xxxccc, color='black')
+    
+    ax5.plot([], [], label=f"$\mu = {np.mean(y_p):.2f}$", color='white')
+    ax5.plot([], [], label=f"$\sigma = {RMS:.2f}$", color='white')
+    ax5.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
+
+    if cmap:
+        fig.colorbar(mappable=MAPPER, cax=ax6, orientation="vertical").set_label(cmap_label, fontsize=12)
+        
+    #plt.show()
+
     
     
