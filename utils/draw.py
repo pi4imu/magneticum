@@ -152,6 +152,7 @@ def draw_84_panels(mode):
         size = 5
 
     plt.figure(figsize=((size)*7+6*3, 5*12+11*2.5))
+    #plt.figure(figsize=((size)*3+6*3, (size)*4+11*2.5))
     plt.tight_layout()
     
     #if mode!='IMAGE':
@@ -192,10 +193,10 @@ def inv_func(y, a, b):
            
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
-    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.95,
-                 elinewidth=1, capsize=2, color='green', label=l4dots)
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.15,
+                 elinewidth=1, capsize=2, color='black', label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color='green', alpha=0.95)
+    plt.scatter(xs, ys, marker='o', s=6, color='black', alpha=0.25)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
@@ -229,7 +230,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
         
-        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.2f} \pm {perr[1]:.2f}}}$'
+        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.1f} \pm {perr[1]:.1f}}}$'
       
     else:
         
@@ -260,7 +261,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)')
         plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
         
-        if False:
+        if True:
         
             jj=0
             kk=0
@@ -366,8 +367,8 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
 
     if True:
     
-        ax1.set_xlim(1.7, 7.2)
-        ax1.set_ylim(1.7, 7.2)
+        ax1.set_xlim(1.5, 7.2)
+        ax1.set_ylim(1.5, 7.2)
     
         ax1.set_xscale("log")
         ax1.set_yscale("log")  
@@ -424,9 +425,9 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
-    ax4.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV", color='white')
-    ax4.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV", color='white')
-    ax4.legend(handlelength=0, frameon=False, fontsize=10, loc=9)
+    ax4.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV  ", color='white')
+    ax4.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV  ", color='white')
+    ax4.legend(handlelength=0, frameon=False, fontsize=9, loc=9)
 
     #plt.subplot(224)
     

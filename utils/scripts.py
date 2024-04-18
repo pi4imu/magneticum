@@ -500,7 +500,8 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         if not delete_bright_regions:
             plt.title(ttiittllee, fontsize=15)
         else:
-            plt.title(ttiittllee+f'\nPercentage of remaining photons: {100*percent_of_photons:.1f}%', fontsize=15)
+            #plt.title(ttiittllee+f'\nPercentage of remaining photons: {100*percent_of_photons:.1f}%', fontsize=15)
+            plt.title(ttiittllee+f', RP={100*percent_of_photons:.1f}%', fontsize=15)
         
         handles, labels = plt.gca().get_legend_handles_labels()
         #l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
