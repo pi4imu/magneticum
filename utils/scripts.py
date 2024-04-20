@@ -493,21 +493,27 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         plt.ylim(cntr[1]-half_size, cntr[1]+half_size)
         plt.gca().set_aspect('equal', 'box')
         
-        plt.xlabel("RA, deg")
-        plt.ylabel("DEC, deg")
-        plt.colorbar(trtr, label=f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", fraction=0.046, pad=0.04)
+        plt.xlabel("RA, deg", size=13)
+        plt.ylabel("DEC, deg", size=13)
+        plt.xticks(size=13)
+        plt.yticks(size=13)
+        cb = plt.colorbar(trtr, fraction=0.046, pad=0.04)
+        cb.ax.tick_params(labelsize=13)
+        cb.set_label(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", size=13)
         ttiittllee = f'#{current_cluster_number}: z={ztrue:.3f}, A={AREA:.1f} min$^2$'
         if not delete_bright_regions:
             plt.title(ttiittllee, fontsize=15)
+            cb.ax.set_yticklabels(['0', '1', '10', '100'])
         else:
             #plt.title(ttiittllee+f'\nPercentage of remaining photons: {100*percent_of_photons:.1f}%', fontsize=15)
             plt.title(ttiittllee+f', RP={100*percent_of_photons:.1f}%', fontsize=15)
+            cb.ax.set_yticklabels(['0', '1'])
         
         handles, labels = plt.gca().get_legend_handles_labels()
         #l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
         l2 = Line2D([], [], label=str(r)+"$\cdot R_{500}$", color='orangered', linestyle='--', linewidth=3)
         handles.extend([l2])
-        plt.legend(handles=handles, loc=3)
+        plt.legend(handles=handles, loc=3, fontsize=13)
         #plt.show()
                 
               
@@ -656,8 +662,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             if draw_only==False:
     	        plt.subplot(1,2,1)
             x.Plot(model_scale)
-            xVals_no_bkg = x.Plot.x()[1:]
-            modVals_no_bkg = x.Plot.model()[1:]
+            xVals_no_bkg = x.Plot.x()[5:]
+            modVals_no_bkg = x.Plot.model()[5:]
     		        
     # defining the model with background included:
         
@@ -744,9 +750,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background photons", alpha=0.5)
             plt.xscale('log')
             plt.yscale('log')
-            plt.xlabel(x.Plot.labels()[0])
-            plt.ylabel(x.Plot.labels()[1])
-            plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$')
+            plt.xlabel(x.Plot.labels()[0], fontsize=11)
+            plt.ylabel(x.Plot.labels()[1], fontsize=11)
+            plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$', fontsize=14)
                
     # fakeit for input model (how erosita sees photons) saved to name1
             
@@ -830,18 +836,19 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                        applyStats = True,
                        filePrefix = "",
                           noWrite = False)
-        #plt.subplot(122)
-        #x.Plot("ldata")
+        
+        plt.subplot(122)
+        x.Plot("ldata")
         ##x.Plot.add = True #!!!!
-        #xVals = x.Plot.x()
-        #xErrors = x.Plot.xErr()
-        #yVals = x.Plot.y()
-        #yErrors = x.Plot.yErr()
-        #modVals = x.Plot.model()
-        #every=1
-        #plt.errorbar(xVals[::every], yVals[::every], 
-        #             yerr=yErrors[::every], xerr=xErrors[::every], 
-        #             linewidth=0, elinewidth=1, color='y', label = "pbkg10^7", alpha=1)
+        xVals = x.Plot.x()
+        xErrors = x.Plot.xErr()
+        yVals = x.Plot.y()
+        yErrors = x.Plot.yErr()
+        modVals = x.Plot.model()
+        every=1
+        plt.errorbar(xVals[::every], yVals[::every], 
+                     yerr=yErrors[::every], xerr=xErrors[::every], 
+                     linewidth=0, elinewidth=1, color='orangered', label = "Particle background", alpha=1, zorder=10)
                                            
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")  
                           
@@ -871,27 +878,31 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             xErrors = x.Plot.xErr()
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
+            if not BACKGROUND:
+                lalabel = "All data"
+            else:
+                lalabel = "Cluster + ph.bkg"
             plt.errorbar(xVals[::every], yVals[::every], 
                          yerr=yErrors[::every], xerr=xErrors[::every], 
-                         linewidth=0, elinewidth=1, label = "Photons + ph.bkg")
+                         linewidth=0, elinewidth=1, label = lalabel)
                 
             # draw particle background separately
             
-            if BACKGROUND:
+            #if BACKGROUND:
             
-                x.Plot.add = True
-                xVals = x.Plot.x(2)
-                xErrors = x.Plot.xErr(2)
-                yVals = x.Plot.y(2)
-                yErrors = x.Plot.yErr(2)
-                plt.errorbar(xVals[::every], yVals[::every], 
-                             yerr=yErrors[::every], xerr=xErrors[::every], 
-                             linewidth=0, elinewidth=1, label = "Only p.bkg", color = 'darkviolet')    
+                #x.Plot.add = True
+                #xVals = x.Plot.x(2)
+                #xErrors = x.Plot.xErr(2)
+                #yVals = x.Plot.y(2)
+                #yErrors = x.Plot.yErr(2)
+                #plt.errorbar(xVals[::every], yVals[::every], 
+                #             yerr=yErrors[::every], xerr=xErrors[::every], 
+                #             linewidth=0, elinewidth=1, label = "Only p.bkg", color = 'darkviolet')    
             plt.xscale('log')
             plt.yscale('log')
             plt.legend(loc=1)   
-            plt.xlabel(x.Plot.labels()[0])
-            plt.ylabel(x.Plot.labels()[1])
+            plt.xlabel(x.Plot.labels()[0], fontsize=12)
+            plt.ylabel(x.Plot.labels()[1], fontsize=12)
             #plt.title(x.Plot.labels()[2])
         
     # total spectrum: photons + particles
@@ -1064,17 +1075,22 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                          yerr=yErrors[::every], xerr=xErrors[::every], 
                          linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
             #print(s_i_total/(s_i_total - s_i_pbkg))
-            plt.plot(xVals, np.array(modVals)+np.array(forredline1), linewidth=2, color='red', label="Best-fit (excl. pbkg)")
+            
+            if not BACKGROUND:
+                plt.plot(xVals, np.array(modVals), linewidth=2, color='red', label="Best-fit")
+            else:
+                plt.plot(xVals, np.array(modVals)+np.array(forredline1), linewidth=2, color='red', label="Best-fit (excl. pbkg)")
             
             #if BACKGROUND:
             #    xVals = x.Plot.x(2)
             #    modVals = x.Plot.model(2)
             #    plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
                    
-            plt.legend(loc=3, framealpha=1)           
+            plt.legend(loc=3, framealpha=1, fontsize=11)           
             XT = [0.1, 1, 10]
-            plt.gca().set_xticks(ticks=XT, labels=XT)   
-            plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=15)
+            plt.gca().set_xticks(ticks=XT, labels=XT, size=11)
+            plt.gca().tick_params(labelsize=11)
+            plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=14)
             
         # plotting best-fit model on left panel:
 
@@ -1085,8 +1101,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             xVals = x.Plot.x()
             modVals = x.Plot.model()
             plt.plot(xVals, modVals, label="Best-fit model"+stats_for_header, color='red')
-            plt.legend(loc=3)
-            plt.gca().set_xticks(ticks=XT, labels=XT)       
+            plt.legend(loc=3, framealpha=1, fontsize=11)
+            plt.gca().set_xticks(ticks=XT, labels=XT, size=11)
+            plt.gca().tick_params(labelsize=11)    
             plt.axvline(borders[0], linestyle = '--', color='black')
             plt.axvline(borders[1], linestyle = '--', color='black')
             plt.xlim(0.08, 11)
