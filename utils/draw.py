@@ -193,10 +193,10 @@ def inv_func(y, a, b):
            
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
-    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.95,
-                 elinewidth=1, capsize=2, color='green', label=l4dots)
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.15,
+                 elinewidth=1, capsize=2, color=clr, label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color='green', alpha=0.95)
+    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.15)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
@@ -236,14 +236,14 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         
         lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.2f}}}$'    
     
-    plt.plot(lll, [func(popt, XX) for XX in lll], color=clr, linewidth=3, linestyle='-', alpha=1, label=lbl)    
+    plt.plot(lll, [func(popt, XX) for XX in lll], color='black', linewidth=3, linestyle='-', alpha=1, label=lbl)    
     
     if with_intervals:
         
         plt.fill_between(lll, 
                          [func(popt_u, XX) for XX in lll], 
                          [func(popt_d, XX) for XX in lll], 
-                         interpolate=False, alpha=0., color=clr)#,
+                         interpolate=False, alpha=0., color='black')#,
                          #label='$1\sigma$ confidence band')      
         
     if with_scatter:
@@ -258,8 +258,8 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         
         print(RMSp, RMSp1)
                
-        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7, label=f'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)')
-        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color=clr, linewidth=3, linestyle='--', alpha=0.7)
+        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=0.7, label=f'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)')
+        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=0.7)
         
         if False:
         
@@ -474,6 +474,78 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
         fig.colorbar(mappable=MAPPER, cax=ax6, orientation="vertical").set_label(cmap_label, fontsize=12)
         
     #plt.show()
+    
+def rebin_scatterplot(xxxx, yyyy, NBINS=15, cornerplot=True):
+    
+    beeens = np.geomspace(min(yyyy), max(yyyy), NBINS)
+    hm = np.histogram(yyyy, bins=beeens)
+    vibs = hm[0].astype("float")
+    
+    if 0 in vibs:
+        for i in range(0, len(vibs)):
+            if vibs[i] == 0:
+                vibs[i] = (vibs[i-1]+vibs[i+1])/2
 
+    yyyy_borders = hm[1]
+    m_yyyy = [(a+b)/2 for a, b in zip(yyyy_borders[:-1], yyyy_borders[1:])]
+
+    lr = []
+    lr_er= []
+
+    for i in range(0, len(yyyy_borders)-1):
+    
+        lums = []
+    
+        for m in yyyy:
+            if m >= yyyy_borders[i] and m <= yyyy_borders[i+1]:
+                j = yyyy.index(m)
+                lums.append(xxxx[j])
+                
+        mn = np.mean(lums)
+        mn_err = np.std(lums)
+    
+        if lums != []:
+            lr.append(mn)
+            lr_er.append(mn_err)
+        else:
+            #print("trouble")
+            lr.append(0)
+            lr_er.append(0)   
+    
+    if cornerplot:
+	    
+        plt.figure(figsize = (7,7))
+
+        plt.subplot(221)
+        asdf = plt.hist(xxxx, bins=NBINS, histtype='stepfilled')
+        plt.xticks([])
+        plt.xscale("log")
+
+        plt.subplot(224)
+        plt.hist(yyyy, bins=beeens, histtype='stepfilled', orientation="horizontal")
+        plt.yticks([])
+        for mb in yyyy_borders:
+            plt.axhline(mb, color='k')
+        plt.yscale("log")
+
+        plt.subplot(223)
+        plt.scatter(xxxx, yyyy)
+        plt.errorbar(lr, m_yyyy, xerr=lr_er, color='r')
+        for mb in yyyy_borders:
+            plt.axhline(mb, color='k')
+        plt.xlabel("$L_{spec}$, $10^{44}$ ergs/sec (in 0.5-2.0 keV band)")#, fontsize=13)
+        plt.ylabel("$M_{500}$, $10^{14} M_{\odot} h^{-1}$")#, fontsize=13)
+        plt.xscale("log")
+        plt.yscale("log")
+
+        plt.subplots_adjust(wspace=0.1, hspace=0.1)
+        plt.show()
+    
+    return(lr, lr_er, m_yyyy)
+    
+    
+    
+    
+    
     
     
