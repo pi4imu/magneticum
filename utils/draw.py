@@ -206,7 +206,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
     power = odr.Model(func)
     #mydata = odr.Data(xs, ys, wd = 1./(np.array(x_es)+0.00001), we = 1./(np.array(y_es)+0.00001))
     mydata = odr.RealData(xs, ys, sx=(np.array(x_es)+0.00001), sy=(np.array(y_es)+0.00001))
-    myodr = odr.ODR(mydata, power, beta0=[0, 0],  maxit=1000)
+    myodr = odr.ODR(mydata, power, beta0=[0, 0],  maxit=100000)
     output = myodr.run()
     popt = output.beta
     #print(popt)

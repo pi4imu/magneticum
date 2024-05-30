@@ -760,7 +760,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                arf = '../erosita/tm1_arf_open_000101v02.fits', 
                         background = '', 
-                          exposure = 10000,         # previously 10000
+                          exposure = 2000,         # previously 10000
                         correction = '', 
                       backExposure = '', 
                           fileName = name1)
@@ -958,8 +958,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         mod = x.Model('phabs*apec')
         mod(1).values = 0.01      # n_H
         mod(1).frozen = True
-        mod(3).frozen = False     # abundance
-      #  mod(3).values = 0.3
+        mod(3).frozen = True     # abundance
+        mod(3).values = 0.3
         mod(4).values = 0 # f"{REDSHIFT}"  # of cluster, not of photon list
 
         mod.show()
