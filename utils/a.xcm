@@ -1,0 +1,18 @@
+mo apec
+2.8
+0.3
+0.035
+0.06
+lumin 0.5 2.0 0.035
+fakeit none
+/home/aleksei/work/clusters/erosita/erosita_pirmf_v20210719.rmf
+/home/aleksei/work/clusters/erosita/tm1_arf_open_000101v02.fits
+y
+
+
+10000
+sho da
+sho ra
+cpd /xw
+setpl ene
+pl lda

@@ -12,7 +12,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     RA_c = current_cluster["x_pix"]*30-5
     DEC_c = current_cluster["y_pix"]*30-5
     R_vir = current_cluster["Rrel"]*30
-    R_500 = current_cluster["R500"]*0.704  # kpc
+    R_500 = current_cluster["R500"]/0.704  # kpc
     ztrue = current_cluster["z_true"]
     
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(ztrue)*1000 # kpc
@@ -23,9 +23,15 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     t = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_"+snap_id_str+".fits", hdu=2)
     
     SLICE = t.to_pandas()        # for photons extraction
-    SLICE1 = t.to_pandas()       # for drawing
-    SLICE2 = t.to_pandas()       # for center searching if it is not from table
-    SLICE3 = t.to_pandas()       # for rescaling SLICE2
+    
+    SLICE = SLICE[SLICE['ENERGY']>0.1]      
+    SLICE = SLICE[SLICE['ENERGY']<12.0]
+    
+    SLICE1 = SLICE       # for drawing
+    SLICE2 = SLICE       # for center searching if it is not from table
+    SLICE3 = SLICE       # for rescaling SLICE2
+    
+    
     
     if r == 'Rvir':
         R = R_vir
@@ -447,7 +453,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
                                           bins=int(2*half_size*3600/ang_res),
                                           norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
                                           range=np.array([(cntr[0]-half_size, cntr[0]+half_size),
-                                                          (cntr[1]-half_size, cntr[1]+half_size)]))
+                                                          (cntr[1]-half_size, cntr[1]+half_size)]))#, density=False)
         
         else:
         
@@ -503,11 +509,14 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         ttiittllee = f'#{current_cluster_number}: z={ztrue:.3f}, A={AREA:.1f} min$^2$'
         if not delete_bright_regions:
             plt.title(ttiittllee, fontsize=15)
+            cb.ax.set_yticks([0, 1, 10, 100])
             cb.ax.set_yticklabels(['0', '1', '10', '100'])
         else:
             #plt.title(ttiittllee+f'\nPercentage of remaining photons: {100*percent_of_photons:.1f}%', fontsize=15)
-            plt.title(ttiittllee+f', RP={100*percent_of_photons:.1f}%', fontsize=15)
-            cb.ax.set_yticklabels(['0', '1'])
+            plt.title(ttiittllee+f', RP={100*percent_of_photons:.1f}%', fontsize=14)
+            cb.ax.set_yticks([0, 1, 10])
+            cb.ax.set_yticklabels(['0', '1', '10'])
+        plt.gca().invert_xaxis()
         
         handles, labels = plt.gca().get_legend_handles_labels()
         #l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
@@ -570,7 +579,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                                                    delete_bright_regions=dbr, draw=False)
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
-    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]*0.704/D_A.value*180/np.pi
+    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]/0.704/D_A.value*180/np.pi
     AREA = np.pi*(inside_radius*R_500_rescaled)**2*3600   # min2
 
     # binning for proper imaging of model (doesn't affect fitting)
@@ -702,6 +711,22 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                        applyStats = True,
                        filePrefix = "",
                           noWrite = False)
+                          
+        # drawing photon backgound on the right panel (added 22 November 2024)
+        
+        plt.subplot(122)
+        x.Plot("ldata")
+        ##x.Plot.add = True #!!!!
+        xVals = x.Plot.x()
+        xErrors = x.Plot.xErr()
+        yVals = x.Plot.y()
+        yErrors = x.Plot.yErr()
+        modVals = x.Plot.model()
+        every=1
+        plt.errorbar(xVals[::every], yVals[::every], 
+                     yerr=yErrors[::every], xerr=xErrors[::every], 
+                     linewidth=0, elinewidth=1, color='green', label = "Photon bkg", alpha=1, zorder=9)
+        #plt.ylim(bottom=1e-4)
         
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")                      
         #check_data()
@@ -760,7 +785,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
                                arf = '../erosita/tm1_arf_open_000101v02.fits', 
                         background = '', 
-                          exposure = 2000,         # previously 10000
+                          exposure = 10000,         # previously 2000
                         correction = '', 
                       backExposure = '', 
                           fileName = name1)
@@ -843,12 +868,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         xVals = x.Plot.x()
         xErrors = x.Plot.xErr()
         yVals = x.Plot.y()
+        bababa = yVals
         yErrors = x.Plot.yErr()
         modVals = x.Plot.model()
         every=1
-        plt.errorbar(xVals[::every], yVals[::every], 
-                     yerr=yErrors[::every], xerr=xErrors[::every], 
-                     linewidth=0, elinewidth=1, color='orangered', label = "Particle background", alpha=1, zorder=10)
+        plt.errorbar(xVals[:-100:every], yVals[:-100:every], 
+                     yerr=yErrors[:-100:every], xerr=xErrors[:-100:every], 
+                     linewidth=0, elinewidth=1, color='purple', label = "Particle bkg", alpha=1, zorder=10)
                                            
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")  
                           
@@ -880,11 +906,15 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             yErrors = x.Plot.yErr()
             if not BACKGROUND:
                 lalabel = "All data"
+                plt.errorbar(xVals[::every], yVals[::every], 
+                             yerr=yErrors[::every], xerr=xErrors[::every], 
+                             linewidth=0, elinewidth=1, label = lalabel)
             else:
-                lalabel = "Cluster + ph.bkg"
-            plt.errorbar(xVals[::every], yVals[::every], 
-                         yerr=yErrors[::every], xerr=xErrors[::every], 
-                         linewidth=0, elinewidth=1, label = lalabel)
+                 lalabel = "Total spectrum"         
+                 plt.errorbar(xVals[::every], np.array(yVals[::every])+np.array(bababa), 
+                             yerr=yErrors[::every], xerr=xErrors[::every], 
+                             linewidth=0, elinewidth=1, label = lalabel)                        
+                         
                 
             # draw particle background separately
             
@@ -941,9 +971,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 xErrors = x.Plot.xErr()
                 yVals = x.Plot.y()
                 yErrors = x.Plot.yErr()
-                plt.errorbar(xVals[::every], yVals[::every], 
-                             yerr=yErrors[::every], xerr=xErrors[::every], 
-                             linewidth=0, elinewidth=1, label = "Total observed spectrum", color="green", alpha = 0.7)
+     #           plt.errorbar(xVals[::every], np.array(yVals[::every])+np.array(bababa), 
+     #                        yerr=yErrors[::every], xerr=xErrors[::every], 
+     #                        linewidth=0, elinewidth=1, label = "Total observed spectrum", color="green", alpha = 0.7)
     
     # energy band for fitting:
           
@@ -972,7 +1002,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         mod(1).frozen = True
         mod(3).frozen = True
         mod(3).values = 0.3
-        mod(4).values = 0 #f"{REDSHIFT}"  # because we already redhifted energies of photons
+        mod(4).values = 0 #f"{REDSHIFT}"  # because we already redshifted energies of photons
         mod(6).values = AREA              # area of cluster = factor before background
         
         # photon background
@@ -1071,15 +1101,15 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
             modVals = x.Plot.model()
-            plt.errorbar(xVals[::every], yVals[::every], 
-                         yerr=yErrors[::every], xerr=xErrors[::every], 
-                         linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
+    #        plt.errorbar(xVals[::every], yVals[::every], 
+    #                     yerr=yErrors[::every], xerr=xErrors[::every], 
+    #                     linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
             #print(s_i_total/(s_i_total - s_i_pbkg))
             
             if not BACKGROUND:
-                plt.plot(xVals, np.array(modVals), linewidth=2, color='red', label="Best-fit")
+                plt.plot(xVals, np.array(modVals), linewidth=2, color='red', label="Best-fit model")
             else:
-                plt.plot(xVals, np.array(modVals)+np.array(forredline1), linewidth=2, color='red', label="Best-fit (excl. pbkg)")
+                plt.plot(xVals, np.array(modVals)+np.array(forredline1)+np.array(bababa[57:722]), linewidth=2, color='red', label="Best-fit (excl. pbkg)")
             
             #if BACKGROUND:
             #    xVals = x.Plot.x(2)
@@ -1102,6 +1132,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             modVals = x.Plot.model()
             plt.plot(xVals, modVals, label="Best-fit model"+stats_for_header, color='red')
             plt.legend(loc=3, framealpha=1, fontsize=11)
+            XT = [0.1, 1, 10]
             plt.gca().set_xticks(ticks=XT, labels=XT, size=11)
             plt.gca().tick_params(labelsize=11)    
             plt.axvline(borders[0], linestyle = '--', color='black')
@@ -1123,7 +1154,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit #, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=50, bkg=False):
+def average_one_cluster(cl_num, N_usr=10, bkg=True):
 
     print()    
     #print("bkg:", bkg, "N_usr:", N_usr)
@@ -1214,7 +1245,7 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     df_all = pd.DataFrame()
     output=[]
            
-    with multiprocessing.Pool(processes=6, maxtasksperchild=1) as pool:
+    with multiprocessing.Pool(processes=2, maxtasksperchild=1) as pool:
         output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
     pool.close()
     pool.join()

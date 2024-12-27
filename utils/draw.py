@@ -161,7 +161,7 @@ def draw_84_panels(mode):
         #lumin_compare = {}
         #average_ene = {}
         
-    for cl_num in clusters.index[:NNN]:
+    for cl_num in tqdm(clusters.index[:NNN]):
         
         plt.subplot(12, 7, np.where(np.array(clusters.index[:NNN]) == cl_num)[0][0]+1)
         
@@ -174,8 +174,8 @@ def draw_84_panels(mode):
             #cl_T500 = clusters.loc[cl_num]["T500"]
             #cl_lum = clusters.loc[cl_num]["Lx500"]
     
-            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=False, inside_radius="R500",
-                                            dbr=False, Xplot=False, plot=True, draw_only=mode)
+            SP = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=True, inside_radius=1,
+                                            dbr=True, Xplot=False, plot=True, draw_only=mode)
 
             #temp_compare[cl_num] = [cl_T500, SP[0][:3]]
             #lumin_compare[cl_num] = [cl_lum, SP[1][:3]]
@@ -193,10 +193,10 @@ def inv_func(y, a, b):
            
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
-    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.15,
-                 elinewidth=1, capsize=2, color=clr, label=l4dots)
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.35,
+                 elinewidth=1, capsize=2, color=clr, zorder=9, label=l4dots)
                  
-    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.15)
+    plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.95, zorder=10)
 
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(yy2, y2_err)], [n+q for n, q in zip(yy2, y2_err)])))
     #plt.fill_between(list1, list2, list3, interpolate=False, alpha=0.4, color=clr)
@@ -206,7 +206,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
     power = odr.Model(func)
     #mydata = odr.Data(xs, ys, wd = 1./(np.array(x_es)+0.00001), we = 1./(np.array(y_es)+0.00001))
     mydata = odr.RealData(xs, ys, sx=(np.array(x_es)+0.00001), sy=(np.array(y_es)+0.00001))
-    myodr = odr.ODR(mydata, power, beta0=[0, 0],  maxit=100000)
+    myodr = odr.ODR(mydata, power, beta0=[0, 0], maxit=100000)
     output = myodr.run()
     popt = output.beta
     #print(popt)
@@ -243,7 +243,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         plt.fill_between(lll, 
                          [func(popt_u, XX) for XX in lll], 
                          [func(popt_d, XX) for XX in lll], 
-                         interpolate=False, alpha=0., color='black')#,
+                         interpolate=False, alpha=0.0, color='black')#,
                          #label='$1\sigma$ confidence band')      
         
     if with_scatter:
@@ -258,10 +258,12 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         
         print(RMSp, RMSp1)
                
-        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=0.7, label=f'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)')
-        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=0.7)
+        plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=1, 
+                 label=f'Intrinsic scatter ($\pm${100*RMSp:.1f}%)')
+        #'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)'
+        plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=1)
         
-        if True:
+        if False:
         
             jj=0
             kk=0
@@ -474,6 +476,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
         fig.colorbar(mappable=MAPPER, cax=ax6, orientation="vertical").set_label(cmap_label, fontsize=12)
         
     #plt.show()
+    return None
     
 def rebin_scatterplot(xxxx, yyyy, NBINS=15, cornerplot=True):
     
