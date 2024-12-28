@@ -457,6 +457,16 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         
         else:
         
+          # 6496:
+          #  SLICE1["check"]=np.where((SLICE1["RA"]-13.549)**2+(SLICE1["DEC"]-11.275)**2 >= 0.01**2, True, False)
+          #  SLICE1 = SLICE1[SLICE1['check'] == True]
+          #  SLICE1 = SLICE1.drop("check", axis=1)    
+                
+          # 7553
+          #  SLICE1["check"]=np.where((SLICE1["RA"]-16.1)**2+(SLICE1["DEC"]-20.4)**2 >= 0.01**2, True, False)
+          #  SLICE1 = SLICE1[SLICE1['check'] == True]
+          #  SLICE1 = SLICE1.drop("check", axis=1)
+        
             nmhg, nmhg_x, nmhg_y = np.histogram2d(SLICE1["RA"], SLICE1["DEC"],
                                               bins=int(2*half_size*3600/ang_res),
                                               #norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1),
@@ -524,8 +534,18 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         handles.extend([l2])
         plt.legend(handles=handles, loc=3, fontsize=13)
         #plt.show()
-                
-              
+          
+    #7553
+    #dddfff["check"]=np.where((dddfff["RA"]-13.549)**2+(dddfff["DEC"]-11.275)**2 >= 0.01**2, True, False)
+    #dddfff = dddfff[dddfff['check'] == True]
+    #dddfff = dddfff.drop("check", axis=1)                
+    
+    #6496
+    #dddfff["check"]=np.where((dddfff["RA"]-16.1)**2+(dddfff["DEC"]-20.4)**2 >= 0.01**2, True, False)
+    #dddfff = dddfff[dddfff['check'] == True]
+    #dddfff = dddfff.drop("check", axis=1)                
+    
+         
     if redshifted_back:
         return dddfff.mul(1+ztrue)
     else:
@@ -1171,7 +1191,7 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
     if bkg:
     
         D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
-        R_500_rescaled = clusters.loc[cl_num]["R500"]*0.704/D_A.value*180/np.pi
+        R_500_rescaled = clusters.loc[cl_num]["R500"]/0.704/D_A.value*180/np.pi
         cl_area = np.pi*R_500_rescaled**2*3600
         
         mean_a4th2 = 0    
