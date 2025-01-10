@@ -363,7 +363,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
             ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
 
     ax1.plot([0, 10], [0, 10], color='black', linewidth=1)
-
+    #ax1.plot([1, 1.25], [1, 1.25], color='black', linewidth=1)
     ax1.set_xlabel(x_label, fontsize=13)
     ax1.set_ylabel(y_label_left, fontsize=13)
 
