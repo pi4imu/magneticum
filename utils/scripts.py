@@ -12,15 +12,27 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     RA_c = current_cluster["x_pix"]*30-5
     DEC_c = current_cluster["y_pix"]*30-5
     R_vir = current_cluster["Rrel"]*30
-    R_500 = current_cluster["R500"]/0.704  # kpc
     ztrue = current_cluster["z_true"]
+    R_500 = current_cluster["R500"]/0.704 #/(1+ztrue)  # kpc
     
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(ztrue)*1000 # kpc
     R_500_rescaled = R_500/D_A.value*180/np.pi  # degrees
+ 
+    #R_500_11 = current_cluster["R500"]  # kpc
+    #R_500_22 = current_cluster["R500"]/0.704 /(1+ztrue)  # kpc   
+    #R1 = R_500_11/D_A.value*180/np.pi  # degrees
+    #R2 = R_500_22/D_A.value*180/np.pi  # degrees
     
     snap_id_str = binned_clusters[current_cluster_number][1]   # id of photon list
-        
+    
     t = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_"+snap_id_str+".fits", hdu=2)
+    
+    #t1 = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_124.fits", hdu=2)
+    #t2 = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_128.fits", hdu=2)
+    #t3 = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_132.fits", hdu=2)
+    #t4 = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_136.fits", hdu=2)
+    #t5 = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_140.fits", hdu=2)    
+    #t = vstack([t1, t2, t3, t4, t5])
     
     SLICE = t.to_pandas()        # for photons extraction
     
@@ -30,8 +42,6 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     SLICE1 = SLICE       # for drawing
     SLICE2 = SLICE       # for center searching if it is not from table
     SLICE3 = SLICE       # for rescaling SLICE2
-    
-    
     
     if r == 'Rvir':
         R = R_vir
@@ -496,7 +506,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             
         #plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle(cntr, R, color='orangered', linestyle="--", lw=3, fill = False))
-        
+               
         x_s = (plt.gca().get_xlim()[1]+plt.gca().get_xlim()[0])/2
         y_s = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.95+plt.gca().get_ylim()[0]
         y_S = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.90+plt.gca().get_ylim()[0]
@@ -530,7 +540,9 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         
         handles, labels = plt.gca().get_legend_handles_labels()
         #l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
-        l2 = Line2D([], [], label=str(r)+"$\cdot R_{500}$", color='orangered', linestyle='--', linewidth=3)
+        l2 = Line2D([], [], label=str(r)+"$\\cdot R_{500} \\ [kpc]$", color='orangered', linestyle='--', linewidth=3)
+        #plt.gca().add_patch(plt.Circle(cntr, R1, color='dodgerblue', linestyle="--", lw=3, fill = False))
+        #l3 = Line2D([], [], label=str(r)+"$\cdot R_{500} \ [kpc/h]$", color='dodgerblue', linestyle='--', linewidth=3)
         handles.extend([l2])
         plt.legend(handles=handles, loc=3, fontsize=13)
         #plt.show()
@@ -797,7 +809,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.yscale('log')
             plt.xlabel(x.Plot.labels()[0], fontsize=11)
             plt.ylabel(x.Plot.labels()[1], fontsize=11)
-            plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\cdot R_{500}$', fontsize=14)
+            plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\\cdot R_{500}$', fontsize=14)
                
     # fakeit for input model (how erosita sees photons) saved to name1
             
@@ -1068,8 +1080,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     x.Xset.parallel.error = 4
     x.Fit.error('2')
     
-    #x.Xset.parallel.steppar = 4
-    #x.Fit.steppar("2 delta 0.1 5 5 delta 0.1 5")
+    x.Xset.parallel.steppar = 4
+    x.Fit.steppar("2 delta 0.05 50")
     
     #x.Xset.parallel.goodness = 4
     #x.Fit.goodness(100)
@@ -1288,17 +1300,17 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     df_all.index = [clusters.index[:]]
       
     if not BACKGROUND:
-        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
-	                   '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
-	                   '$E_{av}$', '$\Delta E_{av}$',
-	                   '$Z$', '$\Delta Z$']
+        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\\Delta T_{spec}$',
+	                   '$L_{bol}$', '$L_{fit}$', '$\\Delta L_{fit}$',
+	                   '$E_{av}$', '$\\Delta E_{av}$',
+	                   '$Z$', '$\\Delta Z$']
     else:
-        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\Delta T_{spec}$',
-	                  '$L_{bol}$', '$L_{fit}$', '$\Delta L_{fit}$',
-	                  '$E_{av}$', '$\Delta E_{av}$',
-	                  '$A_0$', '$A_{fit}$','$\Delta A_{fit}$',
-	                  'NORM', '$\Delta$ NORM']
-	                  #'$B_0$', '$B_{fit}$','$\Delta B_{fit}$']
+        df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\\Delta T_{spec}$',
+	                  '$L_{bol}$', '$L_{fit}$', '$\\Delta L_{fit}$',
+	                  '$E_{av}$', '$\\Delta E_{av}$',
+	                  '$A_0$', '$A_{fit}$','$\\Delta A_{fit}$',
+	                  'NORM', '$\\Delta$ NORM']
+	                  #'$B_0$', '$B_{fit}$','$\\Delta B_{fit}$']
 	                 
     display(df_all)                  
     #df_all.index = aven_usr1.keys()
