@@ -91,8 +91,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
-    ax2.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV")
-    ax2.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV")
+    ax2.plot([], [], label=f"$\\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV")
+    ax2.plot([], [], label=f"$\\sigma = {RMS:.2f}$ keV")
     ax2.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
 
     #plt.subplot(224)
@@ -132,8 +132,8 @@ def draw_three_panels(x_array, y_array, x_label, y_label_left, y_label_right_up,
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
     ax5.plot(yyyccc, xxxccc, color='black')
     
-    ax3.plot([], [], label=f"$\mu = {np.mean(y_p):.2f}$")
-    ax3.plot([], [], label=f"$\sigma = {RMS:.2f}$")
+    ax3.plot([], [], label=f"$\\mu = {np.mean(y_p):.2f}$")
+    ax3.plot([], [], label=f"$\\sigma = {RMS:.2f}$")
     ax3.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
 
     if cmap:
@@ -230,11 +230,11 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
         
-        lbl = f'${l4legend} = ({popt[0]:.2f} \pm {perr[0]:.2f}) \cdot {{{argument}}}^{{{popt[1]:.1f} \pm {perr[1]:.1f}}}$'
+        lbl = f'${l4legend} = ({popt[0]:.2f} \\pm {perr[0]:.2f}) \\cdot {{{argument}}}^{{{popt[1]:.1f} \\pm {perr[1]:.1f}}}$'
       
     else:
         
-        lbl = f'${l4legend} = {popt[0]:.2f} \cdot {{{argument}}}^{{{popt[1]:.2f}}}$'    
+        lbl = f'${l4legend} = {popt[0]:.2f} \\cdot {{{argument}}}^{{{popt[1]:.2f}}}$'    
     
     plt.plot(lll, [func(popt, XX) for XX in lll], color='black', linewidth=3, linestyle='-', alpha=1, label=lbl)    
     
@@ -259,7 +259,7 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         print(RMSp, RMSp1)
                
         plt.plot(lll, [func(popt, XX)*(1+RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=1, 
-                 label=f'Intrinsic scatter ($\pm${100*RMSp:.1f}%)')
+                 label=f'Intrinsic scatter ($\\pm${100*RMSp:.1f}%)')
         #'$1\sigma$ prediction band ($\pm${100*RMSp:.1f}%)'
         plt.plot(lll, [func(popt, XX)*(1-RMSp) for XX in lll], color='black', linewidth=3, linestyle='--', alpha=1)
         
@@ -314,7 +314,7 @@ def calculate_scatter(xs, ys, plot=True):
                     xmax=(np.mean(ypyp)+RMSp-plt.gca().get_xlim()[0])/(plt.gca().get_xlim()[1]-plt.gca().get_xlim()[0]), 
                     ls='--', color='r', lw=2)
 
-        plt.text(-0.3, 3.0, f"$1\sigma$ = {RMSp:.2f}", fontsize=12)
+        plt.text(-0.3, 3.0, f"$1\\sigma$ = {RMSp:.2f}", fontsize=12)
         #plt.text(-1.15, 1.0, f"         $1\sigma \ / \ T_{{best-fit}}$ = \n{RMS:.2f} keV / {np.mean([func(XX, *popt1) for XX in xx]):.2f} keV = {RMS/np.mean([func(XX, *popt1) for XX in xx]):.2f}", fontsize=12)
         
         plt.xlabel("$(T_{500} - T_{best-fit})/T_{best-fit}$", fontsize=12)
@@ -364,7 +364,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
 
     ax1.plot([0, 10], [0, 10], color='black', linewidth=1)
     #ax1.plot([1, 1.25], [1, 1.25], color='black', linewidth=1)
-    ax1.set_xlabel(x_label, fontsize=13)
+    #ax1.set_xlabel(x_label, fontsize=13)
     ax1.set_ylabel(y_label_left, fontsize=13)
 
     if True:
@@ -427,8 +427,8 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
-    ax4.plot([], [], label=f"$\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV  ", color='white')
-    ax4.plot([], [], label=f"$\sigma = {RMS:.2f}$ keV  ", color='white')
+    ax4.plot([], [], label=f"$\\mu = {np.mean([YY-XX for YY, XX in zip(yy, xx)]):.2f}$ keV  ", color='white')
+    ax4.plot([], [], label=f"$\\sigma = {RMS:.2f}$ keV  ", color='white')
     ax4.legend(handlelength=0, frameon=False, fontsize=9, loc=9)
 
     #plt.subplot(224)
@@ -468,8 +468,8 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
     ax5.plot(yyyccc, xxxccc, color='black')
     
-    ax5.plot([], [], label=f"$\mu = {np.mean(y_p):.2f}$", color='white')
-    ax5.plot([], [], label=f"$\sigma = {RMS:.2f}$", color='white')
+    ax5.plot([], [], label=f"$\\mu = {np.mean(y_p):.2f}$", color='white')
+    ax5.plot([], [], label=f"$\\sigma = {RMS:.2f}$", color='white')
     ax5.legend(handlelength=0, frameon=False, fontsize=10, loc=1)
 
     if cmap:
@@ -537,7 +537,7 @@ def rebin_scatterplot(xxxx, yyyy, NBINS=15, cornerplot=True):
         for mb in yyyy_borders:
             plt.axhline(mb, color='k')
         plt.xlabel("$L_{spec}$, $10^{44}$ ergs/sec (in 0.5-2.0 keV band)")#, fontsize=13)
-        plt.ylabel("$M_{500}$, $10^{14} M_{\odot} h^{-1}$")#, fontsize=13)
+        plt.ylabel("$M_{500}$, $10^{14} M_{\\odot} h^{-1}$")#, fontsize=13)
         plt.xscale("log")
         plt.yscale("log")
 

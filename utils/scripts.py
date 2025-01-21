@@ -13,7 +13,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     DEC_c = current_cluster["y_pix"]*30-5
     R_vir = current_cluster["Rrel"]*30
     ztrue = current_cluster["z_true"]
-    R_500 = current_cluster["R500"]/0.704 #/(1+ztrue)  # kpc
+    R_500 = current_cluster["R500"]/0.704 /(1+ztrue)  # kpc
     
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(ztrue)*1000 # kpc
     R_500_rescaled = R_500/D_A.value*180/np.pi  # degrees
@@ -611,7 +611,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                                                    delete_bright_regions=dbr, draw=False)
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
-    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]/0.704/D_A.value*180/np.pi
+    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]/0.704/(1+REDSHIFT)/D_A.value*180/np.pi
     AREA = np.pi*(inside_radius*R_500_rescaled)**2*3600   # min2
 
     # binning for proper imaging of model (doesn't affect fitting)
@@ -1081,7 +1081,10 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     x.Fit.error('2')
     
     x.Xset.parallel.steppar = 4
-    x.Fit.steppar("2 delta 0.05 50")
+    if current_cluster_num == 6496 or current_cluster_num == 7553:
+        x.Fit.steppar("2 delta 0.05 800")
+    else:
+        x.Fit.steppar("2 delta 0.05 50")
     
     #x.Xset.parallel.goodness = 4
     #x.Fit.goodness(100)
@@ -1203,7 +1206,7 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
     if bkg:
     
         D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(cl_red)*1000 # kpc
-        R_500_rescaled = clusters.loc[cl_num]["R500"]/0.704/D_A.value*180/np.pi
+        R_500_rescaled = clusters.loc[cl_num]["R500"]/0.704/(1+cl_red)/D_A.value*180/np.pi
         cl_area = np.pi*R_500_rescaled**2*3600
         
         mean_a4th2 = 0    
@@ -1245,7 +1248,7 @@ def average_one_cluster(cl_num, N_usr=10, bkg=True):
     err_lum = np.std(lumins)
     err_aven = np.std(avens)
     err_a4th = np.std(a4ths)
-
+    
     if bkg:     
 	
         mean_a4th2 = np.mean(a4ths2)
