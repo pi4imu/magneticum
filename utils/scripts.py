@@ -143,8 +143,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             number_of_unfiltered_photons = len(dddfff)
         
             # recalculate nmhg relative to centroid
-            SLICE3["what"] = np.where( (np.abs(SLICE3["RA"]-c_x_1) < half_size) & (np.abs(SLICE3["DEC"]-c_y_1) < half_size),
-                                      True, False)
+            SLICE3["what"] = np.where( (np.abs(SLICE3["RA"]-c_x_1) < half_size) & (np.abs(SLICE3["DEC"]-c_y_1) < half_size), True, False)
             whattodraw = SLICE3[SLICE3['what'] == True]
             whattodraw = whattodraw.drop("what", axis=1)
             nmhg, _, _ = np.histogram2d(whattodraw["RA"], whattodraw["DEC"], 
@@ -487,7 +486,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
             axesforsmooth = [nmhg_x[0], nmhg_x[-1], nmhg_y[0], nmhg_y[-1]] 
            
             trtr = plt.imshow(convolve(np.rot90(nmhg), Gaussian2DKernel(1)), 
-                              norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1), 
+                              norm=matplotlib.colors.SymLogNorm(linthresh=1, linscale=1, vmax=max(nmhg.flatten())), 
                               origin='upper',
                               extent = axesforsmooth)
                         
@@ -501,8 +500,8 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         #plt.gca().add_patch(plt.Rectangle((m_x-r_degrees, m_y-r_degrees), 
         #2*r_degrees, 2*r_degrees, color='red', linestyle="-", lw=1, fill = False, label = 'Brightest'))
                     
-        plt.scatter(RA_c, DEC_c, color='magenta', label = 'Catalogue')
-        plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid')
+        plt.scatter(RA_c, DEC_c, color='white', label = 'Catalogue', marker='X', s=100, edgecolor='k', linewidth=1)
+        plt.scatter(cntr[0], cntr[1], color='orangered', label = 'Centroid', marker='P', s=100, edgecolor='k', linewidth=1)
             
         #plt.gca().add_patch(plt.Circle((RA_c, DEC_c), R_vir, color='dodgerblue', linestyle="--", lw=3, fill = False))
         plt.gca().add_patch(plt.Circle(cntr, R, color='orangered', linestyle="--", lw=3, fill = False))
@@ -511,9 +510,9 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         y_s = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.95+plt.gca().get_ylim()[0]
         y_S = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.90+plt.gca().get_ylim()[0]
         #plt.scatter(x_s, y_s, color='red')     
-        plt.plot((x_s+5/60, x_s-5/60), (y_s, y_s), color='white')
-        plt.text(x_s, y_S, f'10 arcmin $\\approx$ {10/60*D_A.value*np.pi/180:.0f} kpc', 
-                 color='white', ha='center', va='center')
+        plt.plot((x_s+5/60, x_s-5/60), (y_s, y_s), color='white', lw=2)
+        plt.text(x_s, y_S, f'10 arcmin $\\approx$ {10/60*D_A.value*(1+ztrue)*np.pi/180:.0f} kpc', 
+                 color='white', ha='center', va='center', fontsize=12)
         
         plt.xlim(cntr[0]-half_size, cntr[0]+half_size)
         plt.ylim(cntr[1]-half_size, cntr[1]+half_size)
@@ -527,24 +526,34 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         cb.ax.tick_params(labelsize=13)
         cb.set_label(f"Number of photons in {ang_res}''$\\times${ang_res}'' bin", size=13)
         ttiittllee = f'#{current_cluster_number}: z={ztrue:.3f}, A={AREA:.1f} min$^2$'
+
         if not delete_bright_regions:
-            plt.title(ttiittllee, fontsize=15)
-            cb.ax.set_yticks([0, 1, 10, 100])
-            cb.ax.set_yticklabels(['0', '1', '10', '100'])
+            plt.title(ttiittllee, fontsize=14)
+            if max(nmhg.flatten())>100:
+                cb.ax.set_yticks([0, 1, 10, 100])
+                cb.ax.set_yticklabels(['0', '1', '10', '100'])
+                cb.ax.tick_params(pad=0)
+            else:
+                cb.ax.set_yticks([0, 1, 10])
+                cb.ax.set_yticklabels(['0', '1', '10'])               
         else:
             #plt.title(ttiittllee+f'\nPercentage of remaining photons: {100*percent_of_photons:.1f}%', fontsize=15)
             plt.title(ttiittllee+f', RP={100*percent_of_photons:.1f}%', fontsize=14)
-            cb.ax.set_yticks([0, 1, 10])
-            cb.ax.set_yticklabels(['0', '1', '10'])
+            if max(nmhg.flatten())>10:
+                cb.ax.set_yticks([0, 1, 10])
+                cb.ax.set_yticklabels(['0', '1', '10'])
+            else:
+                cb.ax.set_yticks([0, 1])
+                cb.ax.set_yticklabels(['0', '1'])
         plt.gca().invert_xaxis()
         
         handles, labels = plt.gca().get_legend_handles_labels()
         #l1 = Line2D([], [], label="$R_{vir}$", color='dodgerblue', linestyle='--', linewidth=3)
-        l2 = Line2D([], [], label=str(r)+"$\\cdot R_{500} \\ [kpc]$", color='orangered', linestyle='--', linewidth=3)
+        l2 = Line2D([], [], label=str(r)+"$\\cdot R_{500}$", color='orangered', linestyle='--', linewidth=3)
         #plt.gca().add_patch(plt.Circle(cntr, R1, color='dodgerblue', linestyle="--", lw=3, fill = False))
         #l3 = Line2D([], [], label=str(r)+"$\cdot R_{500} \ [kpc/h]$", color='dodgerblue', linestyle='--', linewidth=3)
         handles.extend([l2])
-        plt.legend(handles=handles, loc=3, fontsize=13)
+        plt.legend(handles=handles, loc=3, fontsize=12)
         #plt.show()
           
     #7553
@@ -556,12 +565,11 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     #dddfff["check"]=np.where((dddfff["RA"]-16.1)**2+(dddfff["DEC"]-20.4)**2 >= 0.01**2, True, False)
     #dddfff = dddfff[dddfff['check'] == True]
     #dddfff = dddfff.drop("check", axis=1)                
-    
-         
+
     if redshifted_back:
-        return dddfff.mul(1+ztrue)
-    else:
-        return dddfff
+        dddfff["ENERGY"] = dddfff["ENERGY"] * (1+ztrue)
+    
+    return dddfff
 
  
 def kruzhok(r_pixels, mm, NMHG, d_pixels):
@@ -794,7 +802,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         if draw_only!='DATA':
             if draw_only==False:
                 plt.subplot(121)
-            plt.plot(xVals_no_bkg, modVals_no_bkg, label="Model", linestyle = '-', linewidth=2)
+            plt.plot(xVals_no_bkg[3:], modVals_no_bkg[3:], label="Model", linestyle = '-', linewidth=2)
             
             #if draw_and_save_atable_model:
             #    plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')    
@@ -814,8 +822,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     # fakeit for input model (how erosita sees photons) saved to name1
             
     x.AllData.clear()
-    fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
-                               arf = '../erosita/tm1_arf_open_000101v02.fits', 
+    fs = x.FakeitSettings(response = '/home/aleksei/work/clusters/magneticum/chandra/djs50.ugc3957_v05.rmf', # '../erosita/erosita_pirmf_v20210719.rmf', 
+                               arf = '/home/aleksei/work/clusters/magneticum/chandra/djs50.ugc3957_v05.arf', # '../erosita/tm1_arf_open_000101v02.fits', 
                         background = '', 
                           exposure = 10000,         # previously 2000
                         correction = '', 
@@ -1136,9 +1144,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
             modVals = x.Plot.model()
-    #        plt.errorbar(xVals[::every], yVals[::every], 
-    #                     yerr=yErrors[::every], xerr=xErrors[::every], 
-    #                     linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
+            #plt.errorbar(xVals[::every], yVals[::every], 
+            #             yerr=yErrors[::every], xerr=xErrors[::every], 
+            #             linewidth=0, elinewidth=1, color='b', label = "Data to fit", alpha=1)
             #print(s_i_total/(s_i_total - s_i_pbkg))
             
             if not BACKGROUND:
@@ -1189,7 +1197,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit #, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=10, bkg=True):
+def average_one_cluster(cl_num, N_usr=50, bkg=False):
 
     print()    
     #print("bkg:", bkg, "N_usr:", N_usr)
@@ -1280,7 +1288,7 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     df_all = pd.DataFrame()
     output=[]
            
-    with multiprocessing.Pool(processes=2, maxtasksperchild=1) as pool:
+    with multiprocessing.Pool(processes=4, maxtasksperchild=1) as pool:
         output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
     pool.close()
     pool.join()
