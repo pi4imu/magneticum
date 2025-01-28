@@ -193,7 +193,7 @@ def inv_func(y, a, b):
            
 def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_intervals=True, with_scatter=True):
     
-    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.35,
+    plt.errorbar(xs, ys, xerr=x_es, yerr=y_es, linewidth=0, marker='o', markersize=3, alpha=0.65,
                  elinewidth=1, capsize=2, color=clr, zorder=9)#, label=l4dots)
                  
     plt.scatter(xs, ys, marker='o', s=6, color=clr, alpha=0.95, zorder=10)
@@ -230,7 +230,9 @@ def draw_line(xs, x_es, ys, y_es, clr, l4dots, l4legend, argument, with_interval
         #popt_d = popt-nstd*perr
         #popt_u = popt+nstd*perr
         
-        lbl = f'${l4legend} = ({popt[0]:.2f} \\pm {perr[0]:.2f}) \\cdot {{{argument}}}^{{{popt[1]:.2f} \\pm {perr[1]:.2f}}}$'
+        nun = 1
+        
+        lbl = f'${l4legend} = ({popt[0]:.2f} \\pm {perr[0]:.2f}) \\cdot {{{argument}}}^{{{popt[1]:.{nun}f} \\pm {perr[1]:.{nun}f}}}$'
       
     else:
         
@@ -364,9 +366,8 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
         
     #ax1.set_xlabel(x_label, fontsize=13)
     ax1.set_ylabel(y_label_left, fontsize=13)
-    
-    
-    if False:
+        
+    if True:    # for average energy
     
         ax1.plot([1, 1.25], [1, 1.25], color='black', linewidth=1)
         ax1.set_xlim(1, 1.25)
@@ -374,7 +375,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
         ax1.set_xticks([], [])
         ax2.set_xticks([], [])      
 
-    if True:
+    if False:   # for temperatures
         
         ax1.plot([0, 10], [0, 10], color='black', linewidth=1)
         
@@ -432,7 +433,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     ax4.axhline(0, color='black', linewidth=1)
     
     RMS = np.sqrt( sum([(el**2) for el in y_d])/len(y_d) )  
-    xxxccc = np.linspace(-3,3,1000)
+    xxxccc = np.linspace(-.05,.05,1000)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     

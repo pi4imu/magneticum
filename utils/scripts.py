@@ -9,11 +9,24 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     
     current_cluster = clusters.loc[current_cluster_number]
     
+    snap_id_str = binned_clusters[current_cluster_number][1]   # id of photon list
+    
+    if snap_id_str == '124':
+        zslice = 0.174192889973847
+    elif snap_id_str == '128':
+        zslice = 0.13708140389145
+    elif snap_id_str == '132':
+        zslice = 0.101142861718869
+    elif snap_id_str == '136':
+        zslice = 0.0663401914452304
+    elif snap_id_str == '140':
+        zslice = 0.032637492755919
+    
     RA_c = current_cluster["x_pix"]*30-5
     DEC_c = current_cluster["y_pix"]*30-5
     R_vir = current_cluster["Rrel"]*30
+    R_500 = current_cluster["R500"]/0.704 /(1+zslice)  # kpc    
     ztrue = current_cluster["z_true"]
-    R_500 = current_cluster["R500"]/0.704 /(1+ztrue)  # kpc
     
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(ztrue)*1000 # kpc
     R_500_rescaled = R_500/D_A.value*180/np.pi  # degrees
@@ -22,8 +35,6 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     #R_500_22 = current_cluster["R500"]/0.704 /(1+ztrue)  # kpc   
     #R1 = R_500_11/D_A.value*180/np.pi  # degrees
     #R2 = R_500_22/D_A.value*180/np.pi  # degrees
-    
-    snap_id_str = binned_clusters[current_cluster_number][1]   # id of photon list
     
     t = Table.read("../data/eROSITA_30.0x30.0/Phox/phlist_"+snap_id_str+".fits", hdu=2)
     
@@ -812,7 +823,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                 x.Plot(model_scale)
                 xVals_with_bkg = x.Plot.x()[1:]
                 modVals_with_bkg = x.Plot.model()[1:]               
-                plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model with background photons", alpha=0.5)
+                plt.plot(xVals_with_bkg, modVals_with_bkg, label="Model + background photons", alpha=0.5)
             plt.xscale('log')
             plt.yscale('log')
             plt.xlabel(x.Plot.labels()[0], fontsize=11)
@@ -820,11 +831,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.title('Photons from circle with $R$ = '+str(inside_radius)+'$\\cdot R_{500}$', fontsize=14)
                
     # fakeit for input model (how erosita sees photons) saved to name1
-            
+    
     x.AllData.clear()
-    fs = x.FakeitSettings(response = '/home/aleksei/work/clusters/magneticum/chandra/djs50.ugc3957_v05.rmf', # '../erosita/erosita_pirmf_v20210719.rmf', 
-                               arf = '/home/aleksei/work/clusters/magneticum/chandra/djs50.ugc3957_v05.arf', # '../erosita/tm1_arf_open_000101v02.fits', 
-                        background = '', 
+    fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
+                               arf = '../erosita/tm1_arf_open_000101v02.fits', 
+                        background = '',
                           exposure = 10000,         # previously 2000
                         correction = '', 
                       backExposure = '', 
@@ -1094,6 +1105,8 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     else:
         x.Fit.steppar("2 delta 0.05 50")
     
+    chisq = x.Fit.statistic/x.Fit.dof
+    
     #x.Xset.parallel.goodness = 4
     #x.Fit.goodness(100)
     
@@ -1130,7 +1143,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     
     if plot:
     
-        stats_for_header = f" ($stat/dof=$ {x.Fit.statistic/x.Fit.dof:.3f})"
+        stats_for_header = f" ($stat/dof=$ {chisq:.3f})"
     
         if draw_only!='MODEL':        
             if draw_only==False:
@@ -1152,7 +1165,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             if not BACKGROUND:
                 plt.plot(xVals, np.array(modVals), linewidth=2, color='red', label="Best-fit model")
             else:
-                plt.plot(xVals, np.array(modVals)+np.array(forredline1)+np.array(bababa[57:722]), linewidth=2, color='red', label="Best-fit (excl. pbkg)")
+                plt.plot(xVals, np.array(modVals)+np.array(forredline1)+np.array(bababa[57:722]), linewidth=2, color='red', label="Best-fit model") # (excl. pbkg)
             
             #if BACKGROUND:
             #    xVals = x.Plot.x(2)
@@ -1288,7 +1301,7 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     df_all = pd.DataFrame()
     output=[]
            
-    with multiprocessing.Pool(processes=4, maxtasksperchild=1) as pool:
+    with multiprocessing.Pool(processes=6, maxtasksperchild=1) as pool:
         output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
     pool.close()
     pool.join()
