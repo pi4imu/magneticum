@@ -80,7 +80,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         #setting area and resolution for searching for center
     
         ang_res = 4
-        half_size = 3*R_500_rescaled
+        half_size = 2*R_500_rescaled
         
         if (current_cluster_number != 13334) and (current_cluster_number != 18589):
             hs4s = half_size/3
@@ -522,7 +522,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         y_S = (plt.gca().get_ylim()[1]-plt.gca().get_ylim()[0])*0.90+plt.gca().get_ylim()[0]
         #plt.scatter(x_s, y_s, color='red')     
         plt.plot((x_s+5/60, x_s-5/60), (y_s, y_s), color='white', lw=2)
-        plt.text(x_s, y_S, f'10 arcmin $\\approx$ {10/60*D_A.value*(1+ztrue)*np.pi/180:.0f} kpc', 
+        plt.text(x_s, y_S, f'10 arcmin $\\approx$ {10/60*D_A.value*np.pi/180:.0f} kpc', 
                  color='white', ha='center', va='center', fontsize=12)
         
         plt.xlim(cntr[0]-half_size, cntr[0]+half_size)
@@ -628,9 +628,23 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
       
     list_of_photons = extract_photons_from_cluster(current_cluster_num, r = inside_radius, 
                                                    delete_bright_regions=dbr, draw=False)
+                                                   
+    snap_id_str = binned_clusters[current_cluster_num][1]   # id of photon list
+    
+    if snap_id_str == '124':
+        zslice = 0.174192889973847
+    elif snap_id_str == '128':
+        zslice = 0.13708140389145
+    elif snap_id_str == '132':
+        zslice = 0.101142861718869
+    elif snap_id_str == '136':
+        zslice = 0.0663401914452304
+    elif snap_id_str == '140':
+        zslice = 0.032637492755919
+                                                   
     REDSHIFT = clusters.loc[current_cluster_num]["z_true"]
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(REDSHIFT)*1000 # kpc
-    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]/0.704/(1+REDSHIFT)/D_A.value*180/np.pi
+    R_500_rescaled = clusters.loc[current_cluster_num]["R500"]/0.704/(1+zslice)/D_A.value*180/np.pi
     AREA = np.pi*(inside_radius*R_500_rescaled)**2*3600   # min2
 
     # binning for proper imaging of model (doesn't affect fitting)
@@ -1099,11 +1113,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     x.Xset.parallel.error = 4
     x.Fit.error('2')
     
-    x.Xset.parallel.steppar = 4
-    if current_cluster_num == 6496 or current_cluster_num == 7553:
-        x.Fit.steppar("2 delta 0.05 800")
-    else:
-        x.Fit.steppar("2 delta 0.05 50")
+    #x.Xset.parallel.steppar = 4
+    #if current_cluster_num == 6496 or current_cluster_num == 7553:
+    #    x.Fit.steppar("2 delta 0.05 800")
+    #else:
+    #    x.Fit.steppar("2 delta 0.05 50")
     
     chisq = x.Fit.statistic/x.Fit.dof
     
@@ -1210,7 +1224,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit #, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=50, bkg=False):
+def average_one_cluster(cl_num, N_usr=50, bkg=True):
 
     print()    
     #print("bkg:", bkg, "N_usr:", N_usr)
@@ -1233,27 +1247,27 @@ def average_one_cluster(cl_num, N_usr=50, bkg=False):
         mean_a4th2 = 0    
         #mean_a4th3 = 0
         
-        a4ths2 = np.zeros(N_usr)
+        a4ths2 = []
         #a4ths3 = np.zeros(N_usr)     
                    
     #print(" |", cl_num,": ", end="")
         
-    temps = np.zeros(N_usr)
-    lumins = np.zeros(N_usr)
-    avens = np.zeros(N_usr)
-    a4ths = np.zeros(N_usr)
+    temps = []
+    lumins = []
+    avens = []
+    a4ths = []
 
     for i in tqdm(range(N_usr), leave=False, desc=str(cl_num)):
 	    
-        Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1, dbr=True,
+        Ts = create_spectrum_and_fit_it(cl_num, borders=[0.4, 7.0], BACKGROUND=bkg, inside_radius=1.0, dbr=True,
 	                                Xplot=False, plot=False)
-        temps[i] = Ts[0][0]
-        lumins[i] = Ts[1][0]
-        avens[i] = Ts[2]
-        a4ths[i] = Ts[3]
+        temps.append(Ts[0][0])
+        lumins.append(Ts[1][0])
+        avens.append(Ts[2])
+        a4ths.append(Ts[3])
          
         if bkg:    
-            a4ths2[i] = Ts[4]
+            a4ths2.append(Ts[4])
             #a4ths3[i] = Ts[5]
 	    
         #print(i+1, end="")
@@ -1297,14 +1311,15 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     #lumin_usr1 = {}
     #aven_usr1 = {}
     #a4th_usr1 = {}   # either abundance (if no bkg) or A_from_fit (if with bkg)
-    
+
     df_all = pd.DataFrame()
     output=[]
            
     with multiprocessing.Pool(processes=6, maxtasksperchild=1) as pool:
         output = list(tqdm(pool.map(average_one_cluster, clusters.index[:]), total=len(clusters)))
-    pool.close()
-    pool.join()
+
+#    pool.close()
+#    pool.join()
         #output = average_one_cluster(cl_num, N_usr=N_USR, bkg=BACKGROUND)
 
     #for cl_num in tqdm(clusters.index[:]):
@@ -1316,12 +1331,16 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
         
         #df_all = pd.concat([df1, df2, df3, df4], axis=1)
 
-    for o in output:
-        
-        df_add = pd.DataFrame(np.concatenate(o)).T        
-        df_all = pd.concat([df_all, df_add], axis=0)
+#    for o in output:       
+#        df_add = pd.DataFrame(np.concatenate(o)).T        
+#        df_all = pd.concat([df_all, df_add], axis=0)
 
-    df_all.index = [clusters.index[:]]
+    # added 30.01.2025
+    # Append the output to the DataFrame in one step
+    data_frames = [pd.DataFrame(np.concatenate(o)).T for o in output]
+    df_all = pd.concat(data_frames, axis=0)
+
+    df_all.index = [clusters.index[:]]   
       
     if not BACKGROUND:
         df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\\Delta T_{spec}$',
@@ -1336,9 +1355,10 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
 	                  'NORM', '$\\Delta$ NORM']
 	                  #'$B_0$', '$B_{fit}$','$\\Delta B_{fit}$']
 	                 
-    display(df_all)                  
     #df_all.index = aven_usr1.keys()
     df_all.to_csv('tables/table_'+write_to_file+'.csv', sep=' ', header=False, index=True)
+    display(df_all)                  
+
         
     return None # temp_usr1, lumin_usr1, aven_usr1
 

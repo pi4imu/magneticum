@@ -366,8 +366,10 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
         
     #ax1.set_xlabel(x_label, fontsize=13)
     ax1.set_ylabel(y_label_left, fontsize=13)
+    
+    avt = True
         
-    if True:    # for average energy
+    if avt:    # for average energy
     
         ax1.plot([1, 1.25], [1, 1.25], color='black', linewidth=1)
         ax1.set_xlim(1, 1.25)
@@ -375,7 +377,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
         ax1.set_xticks([], [])
         ax2.set_xticks([], [])      
 
-    if False:   # for temperatures
+    if not avt:   # for temperatures
         
         ax1.plot([0, 10], [0, 10], color='black', linewidth=1)
         
@@ -433,7 +435,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     ax4.axhline(0, color='black', linewidth=1)
     
     RMS = np.sqrt( sum([(el**2) for el in y_d])/len(y_d) )  
-    xxxccc = np.linspace(-.05,.05,1000)
+    xxxccc = np.linspace(-3,3,1000)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
