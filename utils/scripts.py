@@ -80,7 +80,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
         #setting area and resolution for searching for center
     
         ang_res = 4
-        half_size = 2*R_500_rescaled
+        half_size = 1.5*R_500_rescaled
         
         if (current_cluster_number != 13334) and (current_cluster_number != 18589):
             hs4s = half_size/3
@@ -1113,11 +1113,11 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
     x.Xset.parallel.error = 4
     x.Fit.error('2')
     
-    #x.Xset.parallel.steppar = 4
-    #if current_cluster_num == 6496 or current_cluster_num == 7553:
-    #    x.Fit.steppar("2 delta 0.05 800")
-    #else:
-    #    x.Fit.steppar("2 delta 0.05 50")
+    x.Xset.parallel.steppar = 4
+    if current_cluster_num == 6496 or current_cluster_num == 7553:
+        x.Fit.steppar("2 delta 0.05 80")
+    else:
+        x.Fit.steppar("2 delta 0.05 50")
     
     chisq = x.Fit.statistic/x.Fit.dof
     
@@ -1340,7 +1340,7 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
     data_frames = [pd.DataFrame(np.concatenate(o)).T for o in output]
     df_all = pd.concat(data_frames, axis=0)
 
-    df_all.index = [clusters.index[:]]   
+    df_all.index = clusters.index
       
     if not BACKGROUND:
         df_all.columns = ['$T_{500}$', '$T_{spec}$', '$\\Delta T_{spec}$',
@@ -1361,4 +1361,3 @@ def calculate_all_and_average_it(BACKGROUND, write_to_file):
 
         
     return None # temp_usr1, lumin_usr1, aven_usr1
-
