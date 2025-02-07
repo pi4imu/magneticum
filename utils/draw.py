@@ -220,12 +220,12 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
             ax1.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax1.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
  
-  #  ax1.scatter(list(avens_half), [a[0] for a in aven_usr_half], color='k', s=15, zorder=10, marker='x') 
+    ax1.scatter(list(avens_half), [a[0] for a in aven_usr_half], color='k', s=15, zorder=10, marker='x') 
         
     #ax1.set_xlabel(x_label, fontsize=13)
     ax1.set_ylabel(y_label_left, fontsize=13)
 
-    avt = False
+    avt = True
         
     if avt:    # for average energy
     
@@ -275,7 +275,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
             ax2.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax2.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
             
-  #  ax2.scatter(list(avens_half), np.array([a[0] for a in aven_usr_half])-np.array(xx), color='k', s=15, zorder=10, marker='x')
+    ax2.scatter(list(avens_half), np.array([a[0] for a in aven_usr_half])-avens_half, color='k', s=15, zorder=10, marker='x')
    
     ax2.axhline(0, color='black', linewidth=1)
     ax2.set_ylabel(y_label_right_up, fontsize=13)
@@ -295,7 +295,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     ax4.axhline(0, color='black', linewidth=1)
     
     RMS = np.sqrt( sum([(el**2) for el in y_d])/len(y_d) )  
-    xxxccc = np.linspace(-3,3,1000)
+    xxxccc = np.linspace(-.3,.3,1000)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_d), scale=RMS)
     ax4.plot(yyyccc, xxxccc, color='black')
     
@@ -316,7 +316,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
             ax3.plot(xxx, yyy, 'o', color=col, markersize=3)
             ax3.errorbar(xxx, yyy, yerr=ey, xerr=ex, elinewidth=1, capsize=3, color=col)
     
-  #  ax3.scatter(list(avens_half), (np.array([a[0] for a in aven_usr_half])-np.array(xx))/np.array(xx), color='k', s=15, zorder=10, marker='x')            
+    ax3.scatter(list(avens_half), (np.array([a[0] for a in aven_usr_half])-avens_half)/avens_half, color='k', s=15, zorder=10, marker='x')            
     
     #list1, list2, list3 = zip(*sorted(zip(xx, [n-q for n, q in zip(y_p, y_p_err)], [n+q for n, q in zip(y_p, y_p_err)])))
     #ax3.fill_between(list1, list2, list3, interpolate=True, alpha=0.4, color=clr)
@@ -338,7 +338,7 @@ def draw_three_panels_vertical(x_array, y_array, x_label, y_label_left, y_label_
     ax5.axhline(0, color='black', linewidth=1)
     
     RMS = np.sqrt(sum([(el**2) for el in y_p])/len(y_p))
-    xxxccc = np.linspace(-1,1,1000)
+    xxxccc = np.linspace(-.1,.1,1000)
     yyyccc = stats.norm.pdf(xxxccc, loc=np.mean(y_p), scale=RMS) 
     ax5.plot(yyyccc, xxxccc, color='black')
     

@@ -25,7 +25,7 @@ def extract_photons_from_cluster(current_cluster_number, r, centroid=True, delet
     RA_c = current_cluster["x_pix"]*30-5
     DEC_c = current_cluster["y_pix"]*30-5
     R_vir = current_cluster["Rrel"]*30
-    R_500 = current_cluster["R500"]/0.704 /(1+zslice)  # kpc    
+    R_500 = current_cluster["R500"]/0.704/(1+zslice)  # kpc    
     ztrue = current_cluster["z_true"]
     
     D_A = FlatLambdaCDM(H0=100*0.704, Om0=0.272).angular_diameter_distance(ztrue)*1000 # kpc
@@ -1210,6 +1210,42 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.xlim(0.08, 11)
             #plt.show()  
     
+    # added 7.02.25
+    
+    if True:
+    
+        x.AllModels.clear()
+        only_bkg = x.Model("phabs*apec", setPars={1:0.01, 2:2.9183504621041365, 3:0.3, 4:0, 5:1})
+
+        x.AllData.clear()
+        fs = x.FakeitSettings(response = '../erosita/erosita_pirmf_v20210719.rmf', 
+                                   arf = '../erosita/tm1_arf_open_000101v02.fits', 
+                            background = '', 
+                              exposure = 10000000, 
+                            correction = '', 
+                          backExposure = '', 
+                              fileName = 'fakeit.pha')
+        x.AllData.fakeit(nSpectra = 1, 
+                         settings = fs, 
+                       applyStats = True,
+                       filePrefix = "",
+                          noWrite = False)
+                  
+        plt.subplot(122)
+        x.Plot("ldata")
+        xVals = x.Plot.x()
+        xErrors = x.Plot.xErr()
+        yVals = x.Plot.y()
+        yErrors = x.Plot.yErr()
+        modVals = x.Plot.model()
+        every=1
+        plt.errorbar(xVals[::every], yVals[::every], 
+                     yerr=yErrors[::every], xerr=xErrors[::every], 
+                     linewidth=0, elinewidth=1, color='gold', 
+                     label = "$T_{Eq. 3.2} = 2.92$ keV", alpha=1.0, zorder=9)
+        plt.legend(loc=3, framealpha=1, fontsize=11)
+    
+    
     x.Xset.chatter = 10
     
     if not BACKGROUND:
@@ -1224,7 +1260,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         return (T_spec, T_spec_left, T_spec_right), luminosity, av_en, area_from_fit, norm_from_fit #, area_pbkg
 
 
-def average_one_cluster(cl_num, N_usr=50, bkg=True):
+def average_one_cluster(cl_num, N_usr=50, bkg=False):
 
     print()    
     #print("bkg:", bkg, "N_usr:", N_usr)
