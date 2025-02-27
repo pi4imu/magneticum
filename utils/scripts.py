@@ -790,7 +790,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         every=1
         plt.errorbar(xVals[::every], yVals[::every], 
                      yerr=yErrors[::every], xerr=xErrors[::every], 
-                     linewidth=0, elinewidth=1, color='green', label = "Photon bkg", alpha=1, zorder=9)
+                     linewidth=0, elinewidth=1, color='darkgreen', label = "Photon bkg", alpha=0.7, zorder=9)
         #plt.ylim(bottom=1e-4)
         
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")                      
@@ -827,7 +827,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         if draw_only!='DATA':
             if draw_only==False:
                 plt.subplot(121)
-            plt.plot(xVals_no_bkg[3:], modVals_no_bkg[3:], label="Model", linestyle = '-', linewidth=2)
+            plt.plot(xVals_no_bkg[3:], modVals_no_bkg[3:], label="Model", linestyle = '-', linewidth=1)
             
             #if draw_and_save_atable_model:
             #    plt.plot(xVals_atable, modVals_atable, label="Model from atable", linestyle = '-', linewidth=2, color='g')    
@@ -859,7 +859,7 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
                    applyStats = True,
                    filePrefix = "",
                       noWrite = False)
-
+    
     if BACKGROUND:
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")    
         #check_data()
@@ -934,12 +934,13 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         xErrors = x.Plot.xErr()
         yVals = x.Plot.y()
         bababa = yVals
+        bababa_x = xVals
         yErrors = x.Plot.yErr()
         modVals = x.Plot.model()
         every=1
         plt.errorbar(xVals[:-100:every], yVals[:-100:every], 
                      yerr=yErrors[:-100:every], xerr=xErrors[:-100:every], 
-                     linewidth=0, elinewidth=1, color='purple', label = "Particle bkg", alpha=1, zorder=10)
+                     linewidth=0, elinewidth=1, color='purple', label = "Particle bkg", alpha=0.7, zorder=10)
                                            
         x.AllData.ignore(f"**-{borders[0]} {borders[1]}-**")  
                           
@@ -964,23 +965,33 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
         if draw_only!='MODEL':
             if draw_only==False:
                 plt.subplot(122)
-            x.Plot("ldata")        
+                   
+            x.Plot.setRebin(minSig=6, maxBins=100)
+            x.Plot("ldata") 
             xVals = x.Plot.x()
             xErrors = x.Plot.xErr()
             yVals = x.Plot.y()
             yErrors = x.Plot.yErr()
+            
+            #x.Xset.chatter = 10
+            #x.Plot.show()
+            #x.Xset.chatter = 0
+            
             if not BACKGROUND:
                 lalabel = "All data"
                 plt.errorbar(xVals[::every], yVals[::every], 
                              yerr=yErrors[::every], xerr=xErrors[::every], 
-                             linewidth=0, elinewidth=1, label = lalabel)
+                             linewidth=0, elinewidth=1.5, label = lalabel)
             else:
-                 lalabel = "Total spectrum"         
-                 plt.errorbar(xVals[::every], np.array(yVals[::every])+np.array(bababa), 
+                 lalabel = "Total spectrum"
+                 tosum = np.interp(xVals, bababa_x, bababa)
+                 len(tosum)       
+                 plt.errorbar(xVals[::every], np.array(yVals[::every]) + np.array(tosum), #+np.array(bababa[::every]), 
                              yerr=yErrors[::every], xerr=xErrors[::every], 
-                             linewidth=0, elinewidth=1, label = lalabel)                        
-                         
-                
+                             linewidth=0, elinewidth=1.5, label = lalabel)                                 
+            
+            x.Plot.setRebin(minSig=0, maxBins=1)
+                        
             # draw particle background separately
             
             #if BACKGROUND:
@@ -1177,20 +1188,20 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             #print(s_i_total/(s_i_total - s_i_pbkg))
             
             if not BACKGROUND:
-                plt.plot(xVals, np.array(modVals), linewidth=2, color='red', label="Best-fit model")
+                plt.plot(xVals, np.array(modVals), linewidth=2, color='red', label="Best-fit model", alpha=0.7)
             else:
-                plt.plot(xVals, np.array(modVals)+np.array(forredline1)+np.array(bababa[57:722]), linewidth=2, color='red', label="Best-fit model") # (excl. pbkg)
+                plt.plot(xVals, np.array(modVals)+np.array(forredline1)+np.array(bababa[57:722]), linewidth=2, color='red', label="Best-fit model", alpha=0.7) # (excl. pbkg)
             
             #if BACKGROUND:
             #    xVals = x.Plot.x(2)
             #    modVals = x.Plot.model(2)
             #    plt.plot(xVals[::every], modVals[::every], linewidth=1, label = "Best-fit p.bkg", color = 'yellow', ls='-') 
                    
-            plt.legend(loc=3, framealpha=1, fontsize=11)           
+            plt.legend(loc=3, framealpha=0.8, fontsize=11)           
             XT = [0.1, 1, 10]
             plt.gca().set_xticks(ticks=XT, labels=XT, size=11)
             plt.gca().tick_params(labelsize=11)
-            plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$", fontsize=14)
+            plt.title(f"#{current_cluster_num}: "+"$T_{spec}="+f"{T_spec:.2f}"+f"^{{+{(T_spec-T_spec_left):.2f}}}"+f"_{{-{(T_spec_right-T_spec):.2f}}}$ keV", fontsize=14)
             
         # plotting best-fit model on left panel:
 
@@ -1210,9 +1221,9 @@ def create_spectrum_and_fit_it(current_cluster_num, borders=[0.4, 7.0], BACKGROU
             plt.xlim(0.08, 11)
             #plt.show()  
     
-    # added 7.02.25
+    # added 07.02.25
     
-    if True:
+    if False:
     
         x.AllModels.clear()
         only_bkg = x.Model("phabs*apec", setPars={1:0.01, 2:2.9183504621041365, 3:0.3, 4:0, 5:1})
